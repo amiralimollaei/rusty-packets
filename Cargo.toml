@@ -1,0 +1,13 @@
+[package]
+name = "rimbo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+base64 = "0.22.1"
+cesu8 = "1.1.0"
+flate2 = "1.0.30"
+regex = "1.10.5"
+serde = { version = "1.0.204", features = ["derive"] }
+serde_derive = "1.0.204"
+serde_json = "1.0.120"
