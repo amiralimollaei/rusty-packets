@@ -5,14 +5,12 @@ mod utils;
 
 use minecraft::connection::Client;
 
-// ping the server
-
-use utils::logging::get_logger;
+// use utils::logging::get_logger;
 
 
 fn main() {
     // initialize the client
-    let mut client = Client::new("127.0.0.1", 55916, "SimitarXYZ");
+    let mut client = Client::new("127.0.0.1", 55916, "Entity2");
     client.connect();
     /* 
     let statusresponse = client.ping();

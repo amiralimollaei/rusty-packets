@@ -1,8 +1,8 @@
 use std::io::{Read, Seek, Write};
 
-use crate::minecraft::packets::{
+use crate::minecraft::{packets::{
     ConnectionState, Packet, PacketIn, PacketOut, PacketReader, PacketRecv, PacketSend, PacketWriter
-};
+}, types};
 
 #[derive(Debug)]
 pub struct ConfigFeatureFlagsPacket {
@@ -23,10 +23,10 @@ impl Packet for ConfigFeatureFlagsPacket {
 
 impl<T: Read + Seek> PacketIn<T> for ConfigFeatureFlagsPacket {
     fn read(reader: &mut PacketReader<T>) -> Self {
-        let feature_flag_count = reader.read_varint() as usize;
-        let mut feature_flags: Vec<String> = Vec::with_capacity(feature_flag_count);
-        for _ in 0..feature_flag_count {
-            feature_flags.push(reader.read_identifier());
+        let feature_flags_raw: types::Array<types::Identifier> = reader.read_raw();
+        let mut feature_flags: Vec<String> = Vec::with_capacity(feature_flags_raw.len());
+        for feature_flag in feature_flags_raw.iter() {
+            feature_flags.push(feature_flag.get_value());
         }
         Self::new(feature_flags)
     }
@@ -34,10 +34,11 @@ impl<T: Read + Seek> PacketIn<T> for ConfigFeatureFlagsPacket {
 
 impl<T: Write + Seek> PacketOut<T> for ConfigFeatureFlagsPacket {
     fn write(&self, writer: &mut PacketWriter<T>) {
-        writer.write_varint(self.feature_flags.len() as i32);
+        let mut feature_flags_raw: Vec<types::Identifier> = Vec::with_capacity(self.feature_flags.len());
         for identifier in &self.feature_flags {
-            writer.write_identifier_str(identifier.as_str());
+            feature_flags_raw.push(types::Identifier::from_string(identifier.clone()));
         }
+        writer.write_raw(types::Array::new(feature_flags_raw));
     }
 }
 

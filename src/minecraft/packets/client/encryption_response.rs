@@ -15,28 +15,6 @@ impl EncryptionResponsePacket {
     pub fn new(shared_secret: Vec<u8>, verify_token: Vec<u8>) -> Self {
         Self { shared_secret, verify_token, }
     }
-    /*
-    #[inline]
-    fn from_reader(reader: &mut PacketReader) -> Self {
-        // read packet fields
-        let shared_secret_field = reader.read_field(FieldType::Array(
-            Box::new(FieldType::Byte)
-        )).unwrap_array().expect(UNWRAP_ERROR);
-        let mut shared_secret: Vec<u8> = Vec::with_capacity(shared_secret_field.len());
-        for val in shared_secret_field {
-            shared_secret.push(val.as_byte().expect(UNWRAP_ERROR).get_u8())
-        }
-
-        let verify_token_field = reader.read_field(FieldType::Array(
-            Box::new(FieldType::Byte)
-        )).unwrap_array().expect(UNWRAP_ERROR);
-        let mut verify_token: Vec<u8> = Vec::with_capacity(verify_token_field.len());
-        for val in verify_token_field {
-            verify_token.push(val.as_byte().expect(UNWRAP_ERROR).get_u8())
-        }
-
-        Self::new(shared_secret, verify_token)
-    }*/
 
     pub fn get_shared_secret(&self) -> Vec<u8> {
         self.shared_secret.clone()

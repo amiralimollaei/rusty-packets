@@ -20,7 +20,10 @@ mod config_acknowledged;
 pub use config_acknowledged::AcknowledgeFinishConfigPacket;
 
 mod config_keepalive;
-pub use config_keepalive::ServerBoundKeepAlivePacket;
+pub use config_keepalive::ConfigKeepAlivePacket;
 
 mod config_client_packs;
 pub use config_client_packs::{KnownClientPack, KnownClientPacksPacket};
+
+mod play_keepalive;
+pub use play_keepalive::PlayKeepAlivePacket;

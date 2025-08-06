@@ -111,7 +111,7 @@ impl<T: Read + Seek> PacketIn<T> for PlayLoginPacket {
             None
         };
         let death_location = if has_death_location {
-            Some(reader.read_position())
+            Some(reader.read_position_raw())
         } else {
             None
         };

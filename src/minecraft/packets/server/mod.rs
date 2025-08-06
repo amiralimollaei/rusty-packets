@@ -28,7 +28,7 @@ mod config_cookie_request;
 pub use config_cookie_request::ConfigCookieRequest;
 
 mod config_keepalive;
-pub use config_keepalive::ClientBoundKeepAlivePacket;
+pub use config_keepalive::ConfigKeepAlivePacket;
 
 mod config_finish;
 pub use config_finish::FinishConfigurationPacket;
@@ -41,6 +41,9 @@ pub use config_server_packs::{KnownServerPacksPacket, KnownServerPack};
 
 mod config_feature_flags;
 pub use config_feature_flags::ConfigFeatureFlagsPacket;
+
+mod config_plugin_message;
+pub use config_plugin_message::ConfigPluginMessagesPacket;
 
 // TODO: implement missing packets
 
@@ -69,5 +72,11 @@ pub use play_disconnect::PlayDisconnectPacket;
 
 mod sync_player_position;
 pub use sync_player_position::SyncPlayerPositionPacket;
+
+mod play_set_held_item;
+pub use play_set_held_item::PlaySetHeldItemPacket;
+
+mod play_keepalive;
+pub use play_keepalive::PlayKeepAlivePacket;
 
 // TODO: implement missing packets

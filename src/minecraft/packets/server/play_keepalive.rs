@@ -5,11 +5,11 @@ use crate::minecraft::packets::{
 };
 
 #[derive(Debug)]
-pub struct ConfigKeepAlivePacket {
+pub struct PlayKeepAlivePacket {
     keepalive_id: i64,
 }
 
-impl ConfigKeepAlivePacket {
+impl PlayKeepAlivePacket {
     #[inline]
     pub fn new(keepalive_id: i64) -> Self {
         Self { keepalive_id }
@@ -20,22 +20,22 @@ impl ConfigKeepAlivePacket {
     }
 }
 
-impl Packet for ConfigKeepAlivePacket {
-    const ID: i32 = 0x04;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
+impl Packet for PlayKeepAlivePacket {
+    const ID: i32 = 0x26;
+    const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-impl<T: Read + Seek> PacketIn<T> for ConfigKeepAlivePacket {
+impl<T: Read + Seek> PacketIn<T> for PlayKeepAlivePacket {
     fn read(reader: &mut PacketReader<T>) -> Self {
         Self::new(reader.read_long())
     }
 }
 
-impl<T: Write + Seek> PacketOut<T> for ConfigKeepAlivePacket {
+impl<T: Write + Seek> PacketOut<T> for PlayKeepAlivePacket {
     fn write(&self, writer: &mut PacketWriter<T>) {
         writer.write_long(self.keepalive_id);
     }
 }
 
-impl PacketRecv for ConfigKeepAlivePacket {}
-impl PacketSend for ConfigKeepAlivePacket {}
+impl PacketRecv for PlayKeepAlivePacket {}
+impl PacketSend for PlayKeepAlivePacket {}

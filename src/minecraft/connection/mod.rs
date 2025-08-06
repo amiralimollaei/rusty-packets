@@ -3,7 +3,6 @@ mod events;
 // implements a connection loop
 use std::net::{TcpStream, ToSocketAddrs};
 
-use std::thread;
 use std::time::Duration;
 
 use crate::minecraft::PROTOCOL_VERSION;
@@ -224,8 +223,9 @@ impl Client {
                         packet
                     ))
                 }
-                0x01 => {
-                    get_logger().warn(format!("Ignoring login plugin messages (not implemented)."))
+                mcp::server::ConfigPluginMessagesPacket::ID => {
+                    let packet = mcp::server::ConfigPluginMessagesPacket::from_packet(raw_packet);
+                    get_logger().warn(format!("Ignoring login plugin message: {:?}", packet))
                 }
                 mcp::server::ConfigDisconnectPacket::ID => {
                     let packet = mcp::server::ConfigDisconnectPacket::from_packet(raw_packet);
@@ -243,11 +243,10 @@ impl Client {
                     break;
                 }
 
-                mcp::server::ClientBoundKeepAlivePacket::ID => {
-                    let keepalive =
-                        mcp::server::ClientBoundKeepAlivePacket::from_packet(raw_packet);
+                mcp::server::ConfigKeepAlivePacket::ID => {
+                    let keepalive = mcp::server::ConfigKeepAlivePacket::from_packet(raw_packet);
                     // respond to keepalive packet
-                    mcp::client::ServerBoundKeepAlivePacket::new(*keepalive.get_id()).send(stream);
+                    mcp::client::ConfigKeepAlivePacket::new(*keepalive.get_id()).send(stream);
                 }
 
                 0x06 => {
@@ -313,6 +312,16 @@ impl Client {
                 mcp::server::ConfirmTeleportationPacket::new(packet.get_teleport_id()).send(stream);
             }
 
+            mcp::server::PlayChangeDifficultyPacket::ID => {
+                let packet = mcp::server::PlayChangeDifficultyPacket::from_packet(raw_packet);
+                get_logger().info(format!("Difficulty Changed: {:?}", packet));
+            }
+
+            mcp::server::PlaySetHeldItemPacket::ID => {
+                let packet = mcp::server::PlaySetHeldItemPacket::from_packet(raw_packet);
+                get_logger().info(format!("Held Slot Changed: {:?}", packet));
+            }
+
             // TODO: don't completely die just because one packet is not supported
             id => {
                 unsafe {
@@ -359,16 +368,20 @@ impl Client {
                 mcp::server::PlayDisconnectPacket::ID => {
                     let packet = mcp::server::PlayDisconnectPacket::from_packet(raw_packet);
                     get_logger().error(format!("Disconnected: {:?}", packet.get_reason()));
+                    self.state = ConnectionState::Handshaking;
+                    break;
+                }
+
+                mcp::server::PlayKeepAlivePacket::ID => {
+                    let packet = mcp::server::PlayKeepAlivePacket::from_packet(raw_packet);
+                    get_logger().debug(format!("KeepAlive: {:?}", packet));
+                    // respond to keepalive packet
+                    mcp::client::PlayKeepAlivePacket::new(*packet.get_id()).send(stream);
                 }
 
                 mcp::server::PlayLoginPacket::ID => {
                     let packet = mcp::server::PlayLoginPacket::from_packet(raw_packet);
                     get_logger().info(format!("Successfully Logged In!: {:?}", packet));
-                }
-
-                mcp::server::PlayChangeDifficultyPacket::ID => {
-                    let packet = mcp::server::PlayChangeDifficultyPacket::from_packet(raw_packet);
-                    get_logger().info(format!("Difficulty Changed: {:?}", packet));
                 }
 
                 mcp::server::PlayPlayerAbilitiesPacket::ID => {
@@ -386,7 +399,7 @@ impl Client {
             }
 
             // don't spam too much cpu cycles
-            thread::sleep(Duration::from_millis(20));
+            // thread::sleep(Duration::from_millis(20)); <--- this line was causing a very strange bug
         }
     }
 

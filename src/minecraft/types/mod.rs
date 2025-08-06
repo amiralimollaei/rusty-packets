@@ -5,15 +5,30 @@ use regex::Regex;
 
 use std::f32::consts::PI;
 use std::io::{Read, Write};
+use std::ops::Deref;
 
-use crate::utils::{read_bytes, PacketReadable, PacketWritable};
+use crate::utils::{PacketReadable, PacketWritable, read_bytes};
 
 const WRITE_ERROR: &str = "Error while writing to connection";
 const READ_ERROR: &str = "Error while reading connection";
 
+pub trait MinecraftType: PacketReadable + PacketWritable {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Boolean {
     value: bool,
+}
+
+impl From<bool> for Boolean {
+    fn from(item: bool) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<bool> for Boolean {
+    fn into(self) -> bool {
+        self.value
+    }
 }
 
 impl Boolean {
@@ -46,9 +61,23 @@ impl PacketReadable for Boolean {
     }
 }
 
+impl MinecraftType for Boolean {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Byte {
     value: i8,
+}
+
+impl From<i8> for Byte {
+    fn from(item: i8) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<i8> for Byte {
+    fn into(self) -> i8 {
+        self.value
+    }
 }
 
 impl Byte {
@@ -93,9 +122,23 @@ impl PacketReadable for Byte {
     }
 }
 
+impl MinecraftType for Byte {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct UnsignedByte {
     value: u8,
+}
+
+impl From<u8> for UnsignedByte {
+    fn from(item: u8) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<u8> for UnsignedByte {
+    fn into(self) -> u8 {
+        self.value
+    }
 }
 
 impl UnsignedByte {
@@ -126,6 +169,8 @@ impl UnsignedByte {
     }
 }
 
+impl MinecraftType for UnsignedByte {}
+
 impl PacketWritable for UnsignedByte {
     fn write(&self, stream: &mut impl Write) {
         stream.write(&self.value.to_be_bytes()).expect(WRITE_ERROR);
@@ -144,6 +189,19 @@ impl PacketReadable for UnsignedByte {
 pub struct Short {
     value: i16,
 }
+
+impl From<i16> for Short {
+    fn from(item: i16) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<i16> for Short {
+    fn into(self) -> i16 {
+        self.value
+    }
+}
+
 
 impl Short {
     const N_BYTES: usize = 2;
@@ -187,9 +245,23 @@ impl PacketReadable for Short {
     }
 }
 
+impl MinecraftType for Short {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct UnsignedShort {
     value: u16,
+}
+
+impl From<u16> for UnsignedShort {
+    fn from(item: u16) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<u16> for UnsignedShort {
+    fn into(self) -> u16 {
+        self.value
+    }
 }
 
 impl UnsignedShort {
@@ -234,9 +306,23 @@ impl PacketReadable for UnsignedShort {
     }
 }
 
+impl MinecraftType for UnsignedShort {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Int {
     value: i32,
+}
+
+impl From<i32> for Int {
+    fn from(item: i32) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<i32> for Int {
+    fn into(self) -> i32 {
+        self.value
+    }
 }
 
 impl Int {
@@ -278,9 +364,23 @@ impl PacketReadable for Int {
     }
 }
 
+impl MinecraftType for Int {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Long {
     value: i64,
+}
+
+impl From<i64> for Long {
+    fn from(item: i64) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<i64> for Long {
+    fn into(self) -> i64 {
+        self.value
+    }
 }
 
 impl Long {
@@ -322,9 +422,23 @@ impl PacketReadable for Long {
     }
 }
 
+impl MinecraftType for Long {}
+
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub struct Float {
     value: f32,
+}
+
+impl From<f32> for Float {
+    fn from(item: f32) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<f32> for Float {
+    fn into(self) -> f32 {
+        self.value
+    }
 }
 
 impl Float {
@@ -366,9 +480,23 @@ impl PacketReadable for Float {
     }
 }
 
+impl MinecraftType for Float {}
+
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub struct Double {
     value: f64,
+}
+
+impl From<f64> for Double {
+    fn from(item: f64) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<f64> for Double {
+    fn into(self) -> f64 {
+        self.value
+    }
 }
 
 impl Double {
@@ -410,9 +538,23 @@ impl PacketReadable for Double {
     }
 }
 
+impl MinecraftType for Double {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarInt {
     value: i32,
+}
+
+impl From<i32> for VarInt {
+    fn from(item: i32) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<i32> for VarInt {
+    fn into(self) -> i32 {
+        self.value
+    }
 }
 
 impl VarInt {
@@ -493,9 +635,23 @@ impl PacketReadable for VarInt {
     }
 }
 
+impl MinecraftType for VarInt {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarLong {
     value: i64,
+}
+
+impl Into<i64> for VarLong {
+    fn into(self) -> i64 {
+        self.value
+    }
+}
+
+impl From<i64> for VarLong {
+    fn from(item: i64) -> Self {
+        Self { value: item }
+    }
 }
 
 impl VarLong {
@@ -579,11 +735,37 @@ impl PacketReadable for VarLong {
     }
 }
 
+impl MinecraftType for VarLong {}
+
 // addresses the limitations of https://wiki.vg/Protocol#Packet_format
 // it's VarInt but limited to 2^21 -1 max value and 3 bytes max size
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Length {
     value: i32,
+}
+
+impl From<i32> for Length {
+    fn from(item: i32) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<i32> for Length {
+    fn into(self) -> i32 {
+        self.value
+    }
+}
+
+impl From<usize> for Length {
+    fn from(item: usize) -> Self {
+        Self { value: item as i32 }
+    }
+}
+
+impl Into<usize> for Length {
+    fn into(self) -> usize {
+        self.value as usize
+    }
 }
 
 impl Length {
@@ -686,12 +868,30 @@ impl PacketReadable for Length {
     }
 }
 
+impl MinecraftType for Length {}
+
 // implements https://wiki.vg/Protocol#Position
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Position {
     x: i32,
     y: i16,
     z: i32,
+}
+
+impl From<(i32, i16, i32)> for Position {
+    fn from(item: (i32, i16, i32)) -> Self {
+        Self {
+            x: item.0,
+            y: item.1,
+            z: item.2,
+        }
+    }
+}
+
+impl Into<(i32, i16, i32)> for Position {
+    fn into(self) -> (i32, i16, i32) {
+        (self.x, self.y, self.z)
+    }
 }
 
 impl Position {
@@ -777,9 +977,23 @@ impl PacketReadable for Position {
     }
 }
 
+impl MinecraftType for Position {}
+
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Angle {
     value: u8,
+}
+
+impl From<u8> for Angle {
+    fn from(item: u8) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<u8> for Angle {
+    fn into(self) -> u8 {
+        self.value
+    }
 }
 
 impl Angle {
@@ -822,12 +1036,26 @@ impl PacketReadable for Angle {
     }
 }
 
+impl MinecraftType for Angle {}
+
 #[derive(Debug)]
 pub struct ParseUUIDError;
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct UUID {
     value: u128,
+}
+
+impl From<u128> for UUID {
+    fn from(item: u128) -> Self {
+        Self { value: item }
+    }
+}
+
+impl Into<u128> for UUID {
+    fn into(self) -> u128 {
+        self.value
+    }
 }
 
 impl UUID {
@@ -896,10 +1124,37 @@ impl PacketReadable for UUID {
     }
 }
 
+impl MinecraftType for UUID {}
+
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct String {
     codes: Vec<u16>,
 }
+
+impl From<std::string::String> for String {
+    fn from(item: std::string::String) -> Self {
+        Self::from_string(item)
+    }
+}
+
+impl Into<std::string::String> for String {
+    fn into(self) -> std::string::String {
+        self.to_string()
+    }
+}
+
+impl From<&str> for String {
+    fn from(item: &str) -> Self {
+        Self::from_str(item)
+    }
+}
+
+/*impl Into<&str> for String {
+    fn into(self) -> &str {
+        &self.to_string()
+    }
+}*/
+
 
 impl String {
     #[inline]
@@ -979,18 +1234,38 @@ impl PacketReadable for String {
     }
 }
 
-// it's a string, but verified
+impl MinecraftType for String {}
+
+// it's just a string, but verified
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Identifier {
-    value: String,
+    codes: Vec<u16>,
+}
+
+impl From<std::string::String> for Identifier {
+    fn from(item: std::string::String) -> Self {
+        Self::from_string(item)
+    }
+}
+
+impl Into<std::string::String> for Identifier {
+    fn into(self) -> std::string::String {
+        self.to_string()
+    }
+}
+
+impl From<&str> for Identifier {
+    fn from(item: &str) -> Self {
+        Self::from_str(item)
+    }
 }
 
 impl Identifier {
     #[inline]
-    pub fn new(value: std::string::String) -> Self {
-        let v = Self::validate(&value);
+    pub fn new(codes: Vec<u16>) -> Self {
+        let v = Self::validate(&std::string::String::from_utf16_lossy(&codes));
         Self {
-            value: String::from_string(v),
+            codes: v.encode_utf16().collect(),
         }
     }
 
@@ -1016,17 +1291,17 @@ impl Identifier {
     }
 
     #[inline]
-    pub fn from_str(str: &str) -> Self {
-        Self::new(str.to_string())
+    pub fn from_string(str: std::string::String) -> Self {
+        Self::new(str.encode_utf16().collect())
     }
 
     #[inline]
-    pub fn from_string(str: std::string::String) -> Self {
-        Self::new(str)
+    pub fn from_str(str: &str) -> Self {
+        Self::new(str.encode_utf16().collect())
     }
 
     pub fn to_string(&self) -> std::string::String {
-        self.value.to_string()
+        std::string::String::from_utf16_lossy(&self.codes)
     }
 
     pub fn get_value(&self) -> std::string::String {
@@ -1034,22 +1309,187 @@ impl Identifier {
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
-        self.value.as_bytes()
+        self.to_string().as_bytes().to_vec()
+    }
+
+    pub fn len(&self) -> usize {
+        self.codes.len()
     }
 }
 
 impl PacketWritable for Identifier {
     fn write(&self, stream: &mut impl Write) {
-        self.value.write(stream)
+        if self.codes.len() > 0x7FFF {
+            println!("WARNING: writing a string that is too large!");
+        }
+        // get data as bytes
+        let mut utf8_bytes = self.as_bytes();
+        // write length as varint
+        VarInt::from_i32(utf8_bytes.len() as i32).write(stream);
+        // write the data
+        stream.write_all(&mut utf8_bytes).expect(WRITE_ERROR);
     }
 }
 
 impl PacketReadable for Identifier {
     #[inline]
     fn read(stream: &mut impl Read) -> Self {
-        // read the string form the stream
-        let string = String::read(stream).to_string();
-        // initialize a new Identifier object containing the string (validates the string automatically)
-        Self::new(string)
+        // read the first VarInt field that contains the size of the string.
+        let size = VarInt::read(stream).get_value();
+
+        if size < 0 {
+            panic!(
+                "invalid string length, unable to read data!\nsize = {}",
+                size
+            )
+        }
+
+        if size == 0 {
+            return Self::from_str("");
+        }
+
+        // read data bytes
+        let mut utf8_bytes: Vec<u8> = Vec::with_capacity(size as usize);
+        for _ in 0..size {
+            let bytes: [u8; 1] = read_bytes(stream);
+            utf8_bytes.push(bytes[0]);
+        }
+
+        let value =
+            std::string::String::from_utf8(utf8_bytes).expect("error while decoding utf8 data!");
+
+        Self::from_str(value.as_str())
     }
 }
+
+impl MinecraftType for Identifier {}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum Optional<T: MinecraftType> {
+    Some(T),
+    None,
+}
+
+impl<T: MinecraftType, U: Into<T>> From<Option<U>> for Optional<T> {
+    fn from(value: Option<U>) -> Self {
+        match value {
+            Some(v) => Self::Some(v.into()),
+            None => Self::None
+        }
+    }
+}
+
+impl<T: MinecraftType> Into<Option<T>> for Optional<T> {
+    fn into(self) -> Option<T> {
+        match self {
+            Self::Some(v) => Some(v),
+            Self::None => None
+        }
+    }
+}
+
+
+impl<T: MinecraftType> Optional<T> {
+    pub fn is_some(&self) -> bool {
+        match self {
+            Self::Some(_) => false,
+            Self::None => true,
+        }
+    }
+}
+
+impl<T: MinecraftType> PacketReadable for Optional<T> {
+    fn read(stream: &mut impl Read) -> Self {
+        let is_some = Boolean::read(stream).get_value();
+        if is_some {
+            Self::Some(T::read(stream))
+        } else {
+            Self::None
+        }
+    }
+}
+
+impl<T: MinecraftType> PacketWritable for Optional<T> {
+    fn write(&self, stream: &mut impl Write) {
+        match self {
+            Optional::Some(v) => {
+                Boolean::new(true).write(stream);
+                v.write(stream);
+            }
+            Optional::None => {
+                Boolean::new(false).write(stream);
+            }
+        }
+    }
+}
+
+impl<T: MinecraftType> MinecraftType for Optional<T> {}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+
+pub struct Array<T: MinecraftType> {
+    values: Vec<T>,
+}
+
+impl<T: MinecraftType> Into<Vec<T>> for Array<T> {
+    fn into(self) -> Vec<T> {
+        self.values
+    }
+}
+
+impl<T: MinecraftType> From<Vec<T>> for Array<T> {
+    fn from(values: Vec<T>) -> Self {
+        Self { values }
+    }
+}
+
+impl<T: MinecraftType> From<&[T]> for Array<T>
+where
+    T: Clone,
+{
+    fn from(slice: &[T]) -> Self {
+        Self {
+            values: slice.to_vec(),
+        }
+    }
+}
+
+impl<T: MinecraftType> Array<T> {
+    pub fn new(values: Vec<T>) -> Self {
+        Self { values: values }
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+}
+
+impl<T: MinecraftType> Deref for Array<T> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl<T: MinecraftType> PacketReadable for Array<T> {
+    fn read(stream: &mut impl Read) -> Self {
+        let values_count = VarInt::read(stream).get_value() as usize;
+        let mut values = Vec::with_capacity(values_count);
+        for _ in 0..values_count {
+            values.push(T::read(stream));
+        }
+        Self { values: values }
+    }
+}
+
+impl<T: MinecraftType> PacketWritable for Array<T> {
+    fn write(&self, stream: &mut impl Write) {
+        VarInt::new(self.values.len() as i32).write(stream);
+        for value in &self.values {
+            value.write(stream);
+        }
+    }
+}
+
+impl<T: MinecraftType> MinecraftType for Array<T> {}
