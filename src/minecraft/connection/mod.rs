@@ -5,10 +5,10 @@ use std::net::{TcpStream, ToSocketAddrs};
 
 use std::time::Duration;
 
-use crate::minecraft::PROTOCOL_VERSION;
 use crate::minecraft::packets::client::configuration::ClientMainHand;
 use crate::minecraft::packets::server::status::StatusResponse;
 use crate::minecraft::packets::set_threshold;
+use crate::minecraft::{PROTOCOL_VERSION, types};
 
 use super::packets as mcp;
 use super::packets::server::Location;
@@ -192,8 +192,7 @@ impl Client {
                     // where the client is expected to respond to a request indicating whether it understood. The
                     // notchian client always responds that it hasn't understood, and sends an empty payload.
 
-                    let packet =
-                        mcp::server::login::PluginRequestPacket::from_packet(raw_packet);
+                    let packet = mcp::server::login::PluginRequestPacket::from_packet(raw_packet);
                     get_logger().info(format!("LoginPluginRequestPacket: {:?}", packet));
 
                     mcp::client::login::LoginPluginResponsePacket::new(
@@ -235,18 +234,16 @@ impl Client {
                 mcp::server::configuration::CookieRequestPacket::ID => {
                     let packet =
                         mcp::server::configuration::CookieRequestPacket::from_packet(raw_packet);
-                    get_logger().warn(format!(
-                        "CookieRequestPacket: {:?}",
-                        packet
-                    ));
-                    mcp::client::configuration::CookieResponsePacket::new(packet.key.to_string(), None)
-                        .send(stream);
+                    get_logger().warn(format!("CookieRequestPacket: {:?}", packet));
+                    mcp::client::configuration::CookieResponsePacket {
+                        key: packet.key,
+                        payload: types::Optional::None,
+                    }
+                    .send(stream);
                 }
                 mcp::server::configuration::PluginMessagesPacket::ID => {
                     let packet =
-                        mcp::server::configuration::PluginMessagesPacket::from_packet(
-                            raw_packet,
-                        );
+                        mcp::server::configuration::PluginMessagesPacket::from_packet(raw_packet);
                     get_logger().warn(format!("Ignoring login plugin message: {:?}", packet))
                 }
                 mcp::server::configuration::DisconnectPacket::ID => {
@@ -262,7 +259,7 @@ impl Client {
                     );
                     get_logger().info(format!("Configuration Finished!: {:?}", packet));
                     // send finish configuration acknowledged packet
-                    mcp::client::configuration::ConfigurationAcknowledgedPacket::new().send(stream);
+                    mcp::client::configuration::ConfigurationAcknowledgedPacket.send(stream);
                     // set state to play
                     self.state = ConnectionState::Play;
                     break;
@@ -272,14 +269,15 @@ impl Client {
                     let keepalive =
                         mcp::server::configuration::KeepAlivePacket::from_packet(raw_packet);
                     // respond to keepalive packet
-                    mcp::client::configuration::KeepAlivePacket::new(
-                        keepalive.get_id(),
-                    )
+                    mcp::client::configuration::KeepAlivePacket {
+                        keepalive_id: keepalive.keepalive_id,
+                    }
                     .send(stream);
                 }
 
                 mcp::server::configuration::ResetChatPacket::ID => {
-                    let packet = mcp::server::configuration::ResetChatPacket::from_packet(raw_packet);
+                    let packet =
+                        mcp::server::configuration::ResetChatPacket::from_packet(raw_packet);
                     get_logger().info(format!("ResetChatPacket: {:?}", packet));
                 }
 
@@ -293,7 +291,8 @@ impl Client {
                 }
 
                 mcp::server::configuration::AddResourcePackPacket::ID => {
-                    let packet = mcp::server::configuration::AddResourcePackPacket::from_packet(raw_packet);
+                    let packet =
+                        mcp::server::configuration::AddResourcePackPacket::from_packet(raw_packet);
                     get_logger().warn(format!(
                         "WARNING: Ignored add resource pack packet: {:?}",
                         packet
@@ -301,7 +300,9 @@ impl Client {
                 }
 
                 mcp::server::configuration::RemoveResourcePackPacket::ID => {
-                    let packet = mcp::server::configuration::RemoveResourcePackPacket::from_packet(raw_packet);
+                    let packet = mcp::server::configuration::RemoveResourcePackPacket::from_packet(
+                        raw_packet,
+                    );
                     get_logger().warn(format!(
                         "WARNING: Ignored remove resource pack packet: {:?}",
                         packet
@@ -317,20 +318,20 @@ impl Client {
                     let packet =
                         mcp::server::configuration::KnownServerPacksPacket::from_packet(raw_packet);
                     get_logger().info(format!("Known Packs: {:?}", packet));
-                    mcp::client::configuration::KnownClientPacksPacket::new(vec![
-                        mcp::client::configuration::KnownClientPack {
-                            namespace: "minecraft".to_string(),
-                            id: "core".to_string(),
-                            version: "1.21.1".to_string(),
-                        },
-                    ])
+                    mcp::client::configuration::KnownClientPacksPacket {
+                        packs: vec![mcp::client::configuration::KnownClientPack {
+                            namespace: "minecraft".into(),
+                            id: "core".into(),
+                            version: "1.21.1".into(),
+                        }]
+                        .into(),
+                    }
                     .send(stream);
                 }
 
                 mcp::server::configuration::FeatureFlagsPacket::ID => {
-                    let packet = mcp::server::configuration::FeatureFlagsPacket::from_packet(
-                        raw_packet,
-                    );
+                    let packet =
+                        mcp::server::configuration::FeatureFlagsPacket::from_packet(raw_packet);
                     get_logger().info(format!("Feature Flags: {:?}", packet));
                 }
 
@@ -441,8 +442,7 @@ impl Client {
                 }
 
                 mcp::server::play::PlayerAbilitiesPacket::ID => {
-                    let packet =
-                        mcp::server::play::PlayerAbilitiesPacket::from_packet(raw_packet);
+                    let packet = mcp::server::play::PlayerAbilitiesPacket::from_packet(raw_packet);
                     get_logger().info(format!("Player Abilities: {:?}", packet));
                 }
 
