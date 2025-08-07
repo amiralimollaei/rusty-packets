@@ -1,0 +1,55 @@
+[11:08:13 - main/INFO]: Connecting to 127.0.0.1:55916 as Entity2
+[11:08:13 - main/INFO]: Set Compression: threshold=256
+[11:08:13 - main/INFO]: Login Finished! properties:[]
+[11:08:13 - main/WARN]: Ignoring login plugin message: ConfigPluginMessagesPacket { channel: "minecraft:brand", data: [5, 80, 97, 112, 101, 114] }
+[11:08:13 - main/INFO]: Feature Flags: ConfigFeatureFlagsPacket { feature_flags: ["minecraft:vanilla"] }
+[11:08:13 - main/INFO]: Known Packs: KnownServerPacksPacket { packs: [KnownServerPack { namespace: "minecraft", id: "core", version: "1.21.1" }] }
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:worldgen/biome"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:chat_type"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:trim_pattern"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:trim_material"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:wolf_variant"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:painting_variant"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:dimension_type"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:damage_type"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:banner_pattern"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:enchantment"
+[11:08:13 - main/WARN]: WARNING: Ignored registry data packet: "minecraft:jukebox_song"
+[11:08:13 - main/WARN]: WARNING: Ignored update tags packet
+[11:08:13 - main/INFO]: Configuration Finished!: FinishConfigurationPacket
+[11:08:13 - main/INFO]: Successfully Logged In!: PlayLoginPacket { entity_id: 1475, is_harcore: false, dimensions: ["minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"], max_players: 10, view_distance: 32, simulation_distance: 32, reduced_debug_info: false, enable_respawn_screen: false, do_limited_crafting: false, dimension_type: 0, dimension_name: "minecraft:overworld", hashed_seed: -6760005322966805258, game_mode: 0, previous_game_mode: -1, is_debug: false, is_flat: false, death_dimension_name: Some("minecraft:overworld"), death_location: Some(Position { x: -33554425, y: 72, z: 8 }), portal_cooldown: 0, enforces_secure_chat: false }
+[11:08:13 - main/INFO]: Difficulty Changed: PlayChangeDifficultyPacket { difficulty: 0, is_locked: false }
+[11:08:13 - main/INFO]: Player Abilities: PlayPlayerAbilitiesPacket { flags: 0, flying_speed: 0.05, field_of_view_modifier: 0.1 }
+[11:08:13 - main/INFO]: Held Slot Changed: PlaySetHeldItemPacket { slot: 0 }
+[11:08:13 - main/WARN]: Play stage packet with ID=0x77 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x1f is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x41 is not implemented.
+[11:08:13 - main/INFO]: Teleported by server: Location { x: -7.5, y: 72.0, z: 8.5, yaw: 0.0, pitch: 0.0 }
+[11:08:13 - main/WARN]: Play stage packet with ID=0x4b is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x6c is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x3e is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x55 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x62 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x54 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x25 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x64 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x56 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x22 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x71 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x72 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x13 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x15 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x27 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x58 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x75 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x74 is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x5d is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x5c is not implemented.
+[11:08:13 - main/WARN]: Play stage packet with ID=0x11 is not implemented.
+[11:08:13 - main/INFO]: Player Abilities: PlayPlayerAbilitiesPacket { flags: 0, flying_speed: 0.05, field_of_view_modifier: 0.1 }
+[11:08:13 - main/INFO]: Player Abilities: PlayPlayerAbilitiesPacket { flags: 0, flying_speed: 0.05, field_of_view_modifier: 0.1 }
+[11:08:15 - main/WARN]: Play stage packet with ID=0x68 is not implemented.
+[11:08:27 - main/WARN]: Play stage packet with ID=0x28 is not implemented.
+[11:10:48 - main/INFO]: Player Abilities: PlayPlayerAbilitiesPacket { flags: 13, flying_speed: 0.05, field_of_view_modifier: 0.1 }
+[11:10:48 - main/INFO]: Player Abilities: PlayPlayerAbilitiesPacket { flags: 13, flying_speed: 0.05, field_of_view_modifier: 0.1 }
+[11:11:22 - main/WARN]: Play stage packet with ID=0x3d is not implemented.

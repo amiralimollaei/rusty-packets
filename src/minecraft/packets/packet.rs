@@ -267,70 +267,78 @@ impl<R: Write + Seek> PacketWriter<R> {
     pub fn finish(&mut self) {
         // reserved for forward compatibility
     }
-
-    pub fn write_raw<T: MinecraftType>(&mut self, value: T) {
+    pub fn write<T: MinecraftType, U: Into<T>>(&mut self, value: U) {
+        let value_raw: T = value.into();
+        value_raw.write(&mut self.stream);
+    }
+    pub fn write_raw_consume<T: MinecraftType>(&mut self, value: T) {
         value.write(&mut self.stream);
     }
-
+    pub fn write_raw<T: MinecraftType>(&mut self, value: &T) {
+        value.write(&mut self.stream);
+    }
     pub fn write_boolean(&mut self, value: bool) {
-        types::Boolean::new(value).write(&mut self.stream);
+        types::Boolean::from(value).write(&mut self.stream);
     }
     pub fn write_byte(&mut self, value: i8) {
-        types::Byte::new(value).write(&mut self.stream);
+        types::Byte::from(value).write(&mut self.stream);
     }
     pub fn write_ubyte(&mut self, value: u8) {
-        types::UnsignedByte::new(value).write(&mut self.stream);
+        types::UnsignedByte::from(value).write(&mut self.stream);
     }
     pub fn write_short(&mut self, value: i16) {
-        types::Short::new(value).write(&mut self.stream);
+        types::Short::from(value).write(&mut self.stream);
     }
     pub fn write_ushort(&mut self, value: u16) {
-        types::UnsignedShort::new(value).write(&mut self.stream);
+        types::UnsignedShort::from(value).write(&mut self.stream);
     }
     pub fn write_int(&mut self, value: i32) {
-        types::Int::new(value).write(&mut self.stream);
+        types::Int::from(value).write(&mut self.stream);
     }
     pub fn write_long(&mut self, value: i64) {
-        types::Long::new(value).write(&mut self.stream);
+        types::Long::from(value).write(&mut self.stream);
     }
     pub fn write_float(&mut self, value: f32) {
-        types::Float::new(value).write(&mut self.stream);
+        types::Float::from(value).write(&mut self.stream);
     }
     pub fn write_double(&mut self, value: f64) {
-        types::Double::new(value).write(&mut self.stream);
+        types::Double::from(value).write(&mut self.stream);
     }
     pub fn write_varint(&mut self, value: i32) {
-        types::VarInt::new(value).write(&mut self.stream);
+        types::VarInt::from(value).write(&mut self.stream);
     }
     pub fn write_varlong(&mut self, value: i64) {
-        types::VarLong::new(value).write(&mut self.stream);
+        types::VarLong::from(value).write(&mut self.stream);
     }
     pub fn write_length(&mut self, value: i32) {
-        types::Length::new(value).write(&mut self.stream);
+        types::Length::from(value).write(&mut self.stream);
     }
     pub fn write_position(&mut self, x: i32, y: i16, z: i32) {
-        types::Position::new(x, y, z).write(&mut self.stream);
+        types::Position::from((x, y, z)).write(&mut self.stream);
     }
-    pub fn rwrite_angle(&mut self, value: u8) {
-        types::Angle::new(value).write(&mut self.stream);
+    pub fn write_angle(&mut self, value: u8) {
+        types::Angle::from(value).write(&mut self.stream);
     }
     pub fn write_uuid(&mut self, value: u128) {
-        types::UUID::new(value).write(&mut self.stream);
+        types::UUID::from(value).write(&mut self.stream);
     }
     pub fn write_string(&mut self, value: String) {
-        types::String::from_string(value).write(&mut self.stream);
+        types::String::from(value).write(&mut self.stream);
     }
     pub fn write_str(&mut self, value: &str) {
-        types::String::from_str(value).write(&mut self.stream);
+        types::String::from(value).write(&mut self.stream);
     }
     pub fn write_identifier_string(&mut self, value: String) {
-        types::Identifier::from_string(value).write(&mut self.stream);
+        types::Identifier::from(value).write(&mut self.stream);
     }
     pub fn write_identifier_str(&mut self, value: &str) {
-        types::Identifier::from_str(value).write(&mut self.stream);
+        types::Identifier::from(value).write(&mut self.stream);
     }
     pub fn write_nbt(&mut self, value: types::NBTValue) {
         value.write(&mut self.stream);
+    }
+    pub fn write_from_buffer(&mut self, buf: &[u8]) {
+        self.stream.write(buf).unwrap();
     }
     pub fn write_ubyte_array(&mut self, array: Vec<u8>) {
         self.write_varint(array.len() as i32);
@@ -358,73 +366,73 @@ impl<S: Read + Seek> PacketReader<S> {
     }
 
     pub fn read_boolean(&mut self) -> bool {
-        types::Boolean::read(&mut self.stream).get_value()
+        types::Boolean::read(&mut self.stream).into()
     }
     pub fn read_boolean_raw(&mut self) -> types::Boolean {
         types::Boolean::read(&mut self.stream)
     }
     pub fn read_byte(&mut self) -> i8 {
-        types::Byte::read(&mut self.stream).get_value()
+        types::Byte::read(&mut self.stream).into()
     }
     pub fn read_byte_raw(&mut self) -> types::Byte {
         types::Byte::read(&mut self.stream)
     }
     pub fn read_ubyte(&mut self) -> u8 {
-        types::UnsignedByte::read(&mut self.stream).get_value()
+        types::UnsignedByte::read(&mut self.stream).into()
     }
     pub fn read_ubyte_raw(&mut self) -> types::UnsignedByte {
         types::UnsignedByte::read(&mut self.stream)
     }
     pub fn read_short(&mut self) -> i16 {
-        types::Short::read(&mut self.stream).get_value()
+        types::Short::read(&mut self.stream).into()
     }
     pub fn read_short_raw(&mut self) -> types::Short {
         types::Short::read(&mut self.stream)
     }
     pub fn read_ushort(&mut self) -> u16 {
-        types::UnsignedShort::read(&mut self.stream).get_value()
+        types::UnsignedShort::read(&mut self.stream).into()
     }
     pub fn read_ushort_raw(&mut self) -> types::UnsignedShort {
         types::UnsignedShort::read(&mut self.stream)
     }
     pub fn read_int(&mut self) -> i32 {
-        types::Int::read(&mut self.stream).get_value()
+        types::Int::read(&mut self.stream).into()
     }
     pub fn read_int_raw(&mut self) -> types::Int {
         types::Int::read(&mut self.stream)
     }
     pub fn read_long(&mut self) -> i64 {
-        types::Long::read(&mut self.stream).get_value()
+        types::Long::read(&mut self.stream).into()
     }
     pub fn read_long_raw(&mut self) -> types::Long {
         types::Long::read(&mut self.stream)
     }
     pub fn read_float(&mut self) -> f32 {
-        types::Float::read(&mut self.stream).get_value()
+        types::Float::read(&mut self.stream).into()
     }
     pub fn read_float_raw(&mut self) -> types::Float {
         types::Float::read(&mut self.stream)
     }
     pub fn read_double(&mut self) -> f64 {
-        types::Double::read(&mut self.stream).get_value()
+        types::Double::read(&mut self.stream).into()
     }
     pub fn read_double_raw(&mut self) -> types::Double {
         types::Double::read(&mut self.stream)
     }
     pub fn read_varint(&mut self) -> i32 {
-        types::VarInt::read(&mut self.stream).get_value()
+        types::VarInt::read(&mut self.stream).into()
     }
     pub fn read_varint_raw(&mut self) -> types::VarInt {
         types::VarInt::read(&mut self.stream)
     }
     pub fn read_varlong(&mut self) -> i64 {
-        types::VarLong::read(&mut self.stream).get_value()
+        types::VarLong::read(&mut self.stream).into()
     }
     pub fn read_varlong_raw(&mut self) -> types::VarLong {
         types::VarLong::read(&mut self.stream)
     }
     pub fn read_length(&mut self) -> i32 {
-        types::Length::read(&mut self.stream).get_value()
+        types::Length::read(&mut self.stream).into()
     }
     pub fn read_length_raw(&mut self) -> types::Length {
         types::Length::read(&mut self.stream)
@@ -432,23 +440,26 @@ impl<S: Read + Seek> PacketReader<S> {
     pub fn read_position_raw(&mut self) -> types::Position {
         types::Position::read(&mut self.stream)
     }
+    pub fn read_angle(&mut self) -> u8 {
+        types::Angle::read(&mut self.stream).into()
+    }
     pub fn read_angle_raw(&mut self) -> types::Angle {
         types::Angle::read(&mut self.stream)
     }
     pub fn read_uuid(&mut self) -> u128 {
-        types::UUID::read(&mut self.stream).get_value()
+        types::UUID::read(&mut self.stream).into()
     }
     pub fn read_uuid_raw(&mut self) -> types::UUID {
         types::UUID::read(&mut self.stream)
     }
     pub fn read_string(&mut self) -> String {
-        types::String::read(&mut self.stream).get_value()
+        types::String::read(&mut self.stream).into()
     }
     pub fn read_string_raw(&mut self) -> types::String {
         types::String::read(&mut self.stream)
     }
     pub fn read_identifier(&mut self) -> String {
-        types::Identifier::read(&mut self.stream).get_value()
+        types::Identifier::read(&mut self.stream).into()
     }
     pub fn read_identifier_raw(&mut self) -> types::Identifier {
         types::Identifier::read(&mut self.stream)

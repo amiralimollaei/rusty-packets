@@ -4,6 +4,7 @@ pub use nbt::NBTValue;
 use regex::Regex;
 
 use std::f32::consts::PI;
+use std::fmt::Debug;
 use std::io::{Read, Write};
 use std::ops::Deref;
 
@@ -14,9 +15,15 @@ const READ_ERROR: &str = "Error while reading connection";
 
 pub trait MinecraftType: PacketReadable + PacketWritable {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Boolean {
     value: bool,
+}
+
+impl Debug for Boolean {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<bool> for Boolean {
@@ -63,10 +70,17 @@ impl PacketReadable for Boolean {
 
 impl MinecraftType for Boolean {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Byte {
     value: i8,
 }
+
+impl Debug for Byte {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
+}
+
 
 impl From<i8> for Byte {
     fn from(item: i8) -> Self {
@@ -124,9 +138,15 @@ impl PacketReadable for Byte {
 
 impl MinecraftType for Byte {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UnsignedByte {
     value: u8,
+}
+
+impl Debug for UnsignedByte {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<u8> for UnsignedByte {
@@ -185,9 +205,15 @@ impl PacketReadable for UnsignedByte {
     }
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Short {
     value: i16,
+}
+
+impl Debug for Short {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<i16> for Short {
@@ -201,7 +227,6 @@ impl Into<i16> for Short {
         self.value
     }
 }
-
 
 impl Short {
     const N_BYTES: usize = 2;
@@ -247,9 +272,15 @@ impl PacketReadable for Short {
 
 impl MinecraftType for Short {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UnsignedShort {
     value: u16,
+}
+
+impl Debug for UnsignedShort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<u16> for UnsignedShort {
@@ -308,9 +339,15 @@ impl PacketReadable for UnsignedShort {
 
 impl MinecraftType for UnsignedShort {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Int {
     value: i32,
+}
+
+impl Debug for Int {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<i32> for Int {
@@ -366,9 +403,15 @@ impl PacketReadable for Int {
 
 impl MinecraftType for Int {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Long {
     value: i64,
+}
+
+impl Debug for Long {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<i64> for Long {
@@ -424,9 +467,15 @@ impl PacketReadable for Long {
 
 impl MinecraftType for Long {}
 
-#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Float {
     value: f32,
+}
+
+impl Debug for Float {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<f32> for Float {
@@ -482,9 +531,15 @@ impl PacketReadable for Float {
 
 impl MinecraftType for Float {}
 
-#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Double {
     value: f64,
+}
+
+impl Debug for Double {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<f64> for Double {
@@ -543,6 +598,12 @@ impl MinecraftType for Double {}
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarInt {
     value: i32,
+}
+
+impl Debug for VarInt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<i32> for VarInt {
@@ -642,6 +703,12 @@ pub struct VarLong {
     value: i64,
 }
 
+impl Debug for VarLong {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
+}
+
 impl Into<i64> for VarLong {
     fn into(self) -> i64 {
         self.value
@@ -739,9 +806,15 @@ impl MinecraftType for VarLong {}
 
 // addresses the limitations of https://wiki.vg/Protocol#Packet_format
 // it's VarInt but limited to 2^21 -1 max value and 3 bytes max size
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Length {
     value: i32,
+}
+
+impl Debug for Length {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.value))
+    }
 }
 
 impl From<i32> for Length {
@@ -871,11 +944,17 @@ impl PacketReadable for Length {
 impl MinecraftType for Length {}
 
 // implements https://wiki.vg/Protocol#Position
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Position {
     x: i32,
     y: i16,
     z: i32,
+}
+
+impl Debug for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{{ x: {:?}, y: {:?}, z: {:?} }}", &self.x, &self.y, &self.z))
+    }
 }
 
 impl From<(i32, i16, i32)> for Position {
@@ -979,9 +1058,15 @@ impl PacketReadable for Position {
 
 impl MinecraftType for Position {}
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Angle {
     value: u8,
+}
+
+impl Debug for Angle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:.2}/360", &self.get_degrees()))
+    }
 }
 
 impl From<u8> for Angle {
@@ -1041,9 +1126,15 @@ impl MinecraftType for Angle {}
 #[derive(Debug)]
 pub struct ParseUUIDError;
 
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UUID {
     value: u128,
+}
+
+impl Debug for UUID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{}", &self.to_string()))
+    }
 }
 
 impl From<u128> for UUID {
@@ -1126,9 +1217,15 @@ impl PacketReadable for UUID {
 
 impl MinecraftType for UUID {}
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct String {
     codes: Vec<u16>,
+}
+
+impl Debug for String {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{}", &self.to_string()))
+    }
 }
 
 impl From<std::string::String> for String {
@@ -1154,7 +1251,6 @@ impl From<&str> for String {
         &self.to_string()
     }
 }*/
-
 
 impl String {
     #[inline]
@@ -1237,9 +1333,15 @@ impl PacketReadable for String {
 impl MinecraftType for String {}
 
 // it's just a string, but verified
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Identifier {
     codes: Vec<u16>,
+}
+
+impl Debug for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{}", &self.to_string()))
+    }
 }
 
 impl From<std::string::String> for Identifier {
@@ -1364,17 +1466,30 @@ impl PacketReadable for Identifier {
 
 impl MinecraftType for Identifier {}
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Optional<T: MinecraftType> {
     Some(T),
     None,
+}
+
+impl<T: Debug + MinecraftType> Debug for Optional<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Some(v) => {
+                f.write_str(&format!("Some({:?})", v))
+            }
+            Self::None => {
+                f.write_str("None")
+            }
+        }
+    }
 }
 
 impl<T: MinecraftType, U: Into<T>> From<Option<U>> for Optional<T> {
     fn from(value: Option<U>) -> Self {
         match value {
             Some(v) => Self::Some(v.into()),
-            None => Self::None
+            None => Self::None,
         }
     }
 }
@@ -1383,11 +1498,24 @@ impl<T: MinecraftType> Into<Option<T>> for Optional<T> {
     fn into(self) -> Option<T> {
         match self {
             Self::Some(v) => Some(v),
-            Self::None => None
+            Self::None => None,
         }
     }
 }
 
+impl<T: MinecraftType> Optional<T> {
+    /// Converts this `Optional<T>` into a standard `Option<U>`,
+    /// consuming the original value and converting the inner type.
+    pub fn into_option<U>(self) -> Option<U>
+    where
+        T: Into<U>,
+    {
+        match self {
+            Optional::Some(v) => Some(v.into()),
+            Optional::None => None,
+        }
+    }
+}
 
 impl<T: MinecraftType> Optional<T> {
     pub fn is_some(&self) -> bool {
@@ -1425,10 +1553,16 @@ impl<T: MinecraftType> PacketWritable for Optional<T> {
 
 impl<T: MinecraftType> MinecraftType for Optional<T> {}
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 
 pub struct Array<T: MinecraftType> {
     values: Vec<T>,
+}
+
+impl<T: Debug + MinecraftType> Debug for Array<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.values))
+    }
 }
 
 impl<T: MinecraftType> Into<Vec<T>> for Array<T> {
@@ -1493,3 +1627,145 @@ impl<T: MinecraftType> PacketWritable for Array<T> {
 }
 
 impl<T: MinecraftType> MinecraftType for Array<T> {}
+
+macro_rules! impl_minecraft_type_for_tuple {
+    // The macro takes two lists:
+    //  - $($T:ident),+ : A list of generic type names (e.g., T0, T1, T2)
+    //  - $($idx:tt),+  : A list of the corresponding tuple indices (e.g., 0, 1, 2)
+    ( $($T:ident),+ ; $($idx:tt),+ ) => {
+        // Implement the marker trait `MinecraftType` for the tuple
+        impl<$($T),+> MinecraftType for ( $($T,)+ )
+        where
+            // This is only valid if every element in the tuple is also a MinecraftType
+            $( $T: MinecraftType ),+
+        {}
+
+        // Implement `PacketWritable` for the tuple
+        impl<$($T),+> PacketWritable for ( $($T,)+ )
+        where
+            // This is only valid if every element is writable
+            $( $T: PacketWritable ),+
+        {
+            /// Writes each element of the tuple to the stream in order.
+            fn write(&self, stream: &mut impl std::io::Write) {
+                // The magic of macros: this line expands for each element.
+                // For a (T0, T1) tuple, it becomes:
+                //   self.0.write(stream);
+                //   self.1.write(stream);
+                $(
+                    self.$idx.write(stream);
+                )+
+            }
+        }
+
+        // Implement `PacketReadable` for the tuple
+        impl<$($T),+> PacketReadable for ( $($T,)+ )
+        where
+            // This is required for any type that implements the trait
+            Self: Sized,
+            // This is only valid if every element is readable
+            $( $T: PacketReadable ),+
+        {
+            /// Reads each element of the tuple from the stream in order.
+            fn read(stream: &mut impl std::io::Read) -> Self {
+                // This creates the tuple by calling `read` for each type in order.
+                // For a (T0, T1) tuple, it becomes:
+                //   (T0::read(stream), T1::read(stream))
+                (
+                    $(
+                        $T::read(stream),
+                    )+
+                )
+            }
+        }
+    };
+}
+
+//                Type Names | Indices
+//                -----------|--------
+impl_minecraft_type_for_tuple!(T0;        0);
+impl_minecraft_type_for_tuple!(T0, T1;    0, 1);
+impl_minecraft_type_for_tuple!(T0, T1, T2; 0, 1, 2);
+impl_minecraft_type_for_tuple!(T0, T1, T2, T3; 0, 1, 2, 3);
+impl_minecraft_type_for_tuple!(T0, T1, T2, T3, T4; 0, 1, 2, 3, 4);
+impl_minecraft_type_for_tuple!(T0, T1, T2, T3, T4, T5; 0, 1, 2, 3, 4, 5);
+
+/// A custom trait for element-wise tuple conversion, used when `From`/`Into`
+/// cannot be implemented due to Rust's orphan rule.
+pub trait TupleInto<D> {
+    /// Performs the conversion.
+    fn into_tuple(self) -> D;
+}
+
+// Now, we create a macro to implement OUR trait. This is allowed!
+macro_rules! impl_into_tuple {
+    // - $($D:ident),+: A list of Destination generic type names (e.g., D0, D1)
+    // - $($S:ident),+: A list of Source generic type names (e.g., S0, S1)
+    // - $($idx:tt),+ : A list of the tuple indices (e.g., 0, 1)
+    ( $($D:ident),+ ; $($S:ident),+ ; $($idx:tt),+ ) => {
+        // Implement `TupleInto<DestinationTuple>` for `SourceTuple`
+        // This is allowed because `TupleInto` is OUR trait (a "local" trait).
+        impl<$($D,)+ $($S,)+> TupleInto<( $($D,)+ )> for ( $($S,)+ )
+        where
+            // The conversion is only possible if each source element can
+            // be converted into the corresponding destination element.
+            $( $S: Into<$D> ),+
+        {
+            fn into_tuple(self) -> ( $($D,)+ ) {
+                (
+                    $(
+                        self.$idx.into(),
+                    )+
+                )
+            }
+        }
+    };
+}
+
+impl_into_tuple!(D0; S0; 0);
+impl_into_tuple!(D0, D1; S0, S1; 0, 1);
+impl_into_tuple!(D0, D1, D2; S0, S1, S2; 0, 1, 2);
+impl_into_tuple!(D0, D1, D2, D3; S0, S1, S2, S3; 0, 1, 2, 3);
+impl_into_tuple!(D0, D1, D2, D3, D4; S0, S1, S2, S3, S4; 0, 1, 2, 3, 4);
+impl_into_tuple!(D0, D1, D2, D3, D4, D5; S0, S1, S2, S3, S4, S5; 0, 1, 2, 3, 4, 5);
+
+/// A custom trait for element-wise tuple conversion from a source tuple.
+/// This is the counterpart to `TupleInto`.
+pub trait TupleFrom<S> {
+    /// Creates a value from a source tuple.
+    fn from_tuple(source: S) -> Self;
+}
+
+macro_rules! impl_from_tuple {
+    // - $($D:ident),+: A list of Destination generic type names (e.g., D0, D1)
+    // - $($S:ident),+: A list of Source generic type names (e.g., S0, S1)
+    // - $($idx:tt),+ : A list of the tuple indices (e.g., 0, 1)
+    ( $($D:ident),+ ; $($S:ident),+ ; $($idx:tt),+ ) => {
+        // Implement `TupleFrom<SourceTuple>` for `DestinationTuple`
+        // This is allowed because `TupleFrom` is our local trait.
+        impl<$($D,)+ $($S,)+> TupleFrom<( $($S,)+ )> for ( $($D,)+ )
+        where
+            // The conversion is only possible if each destination element
+            // can be created from the corresponding source element.
+            $( $D: From<$S> ),+
+        {
+            fn from_tuple(source: ( $($S,)+ )) -> Self {
+                (
+                    // Call .into() on each source element to convert
+                    // it to the destination type. This works because
+                    // `D: From<S>` implies `S: Into<D>`.
+                    $(
+                        source.$idx.into(),
+                    )+
+                )
+            }
+        }
+    };
+}
+
+impl_from_tuple!(D0; S0; 0);
+impl_from_tuple!(D0, D1; S0, S1; 0, 1);
+impl_from_tuple!(D0, D1, D2; S0, S1, S2; 0, 1, 2);
+impl_from_tuple!(D0, D1, D2, D3; S0, S1, S2, S3; 0, 1, 2, 3);
+impl_from_tuple!(D0, D1, D2, D3, D4; S0, S1, S2, S3, S4; 0, 1, 2, 3, 4);
+impl_from_tuple!(D0, D1, D2, D3, D4, D5; S0, S1, S2, S3, S4, S5; 0, 1, 2, 3, 4, 5);

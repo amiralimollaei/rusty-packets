@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+minecraft_type_derive = { path = "minecraft_type_derive" }
 base64 = "0.22.1"
 cesu8 = "1.1.0"
 flate2 = "1.0.30"

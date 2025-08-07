@@ -8,6 +8,8 @@ use std::io::{Cursor, Read, Seek, Write};
 
 pub use packet::{PacketContainer, PacketReader, PacketWriter};
 
+use crate::minecraft::types::MinecraftType;
+
 static mut THRESHOLD: i32 = -1;
 
 pub fn get_threshold() -> i32 {
@@ -40,6 +42,14 @@ pub trait PacketRecv: PacketIn<Cursor<Vec<u8>>> {
     }
 }
 
+impl<U: Packet + MinecraftType> PacketRecv for U {}
+
+impl<T: Read + Seek, U: Packet + MinecraftType> PacketIn<T> for U {
+    fn read(reader: &mut PacketReader<T>) -> Self {
+        reader.read_raw::<Self>()
+    }
+}
+
 pub trait PacketOut<T: Write + Seek>: Packet {
     fn write(&self, writer: &mut PacketWriter<T>);
 }
@@ -54,6 +64,14 @@ pub trait PacketSend: for<'a> PacketOut<&'a mut Cursor<Vec<u8>>> {
             Self::ID,
             packet_stream.get_ref().clone()
         ).send(stream);
+    }
+}
+
+impl<U: Packet + MinecraftType> PacketSend for U {}
+
+impl<T: Write + Seek, U: Packet + MinecraftType> PacketOut<T> for U {
+    fn write(&self, writer: &mut PacketWriter<T>) {
+        writer.write_raw::<Self>(&self);
     }
 }
 

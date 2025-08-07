@@ -8,7 +8,7 @@ use std::{
 use cesu8;
 use flate2::bufread::GzDecoder;
 
-use crate::utils::{read_bytes, read_n_bytes, PacketReadable, PacketWritable};
+use crate::{minecraft::types::MinecraftType, utils::{read_bytes, read_n_bytes, PacketReadable, PacketWritable}};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 // represents all possible NBT types
@@ -396,6 +396,8 @@ impl PacketReadable for NBTValue {
         Self::read_value(type_id, stream, false)
     }
 }
+
+impl MinecraftType for NBTValue {}
 /*
 fn nbt_test() {
     let nbt_value = NBTValue::from_nbt("bigtest.nbt").expect("Error while reading nbt file");
