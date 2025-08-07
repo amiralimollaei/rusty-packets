@@ -1,19 +1,25 @@
-use std::io::{Seek, Write};
+use crate::minecraft::types::MinecraftType;
+use minecraft_type_derive::MinecraftType;
 
-use crate::minecraft::packets::{ConnectionState, Packet, PacketOut, PacketSend, PacketWriter};
+use crate::utils::{PacketReadable, PacketWritable};
 
-#[derive(Clone)]
+use crate::minecraft::{
+    packets::{ConnectionState, Packet},
+    types,
+};
+
+#[derive(MinecraftType, Debug, Clone)]
 pub struct LoginStartPacket {
-    username: String,
-    uuid: u128,
+    username: types::String,
+    uuid: types::UUID,
 }
 
 impl LoginStartPacket {
     #[inline]
     pub fn new(username: String, uuid: u128) -> Self {
         Self {
-            username: username,
-            uuid: uuid,
+            username: username.into(),
+            uuid: uuid.into(),
         }
     }
 }
@@ -22,12 +28,3 @@ impl Packet for LoginStartPacket {
     const ID: i32 = 0x00;
     const PHASE: ConnectionState = ConnectionState::Login;
 }
-
-impl<T: Write + Seek> PacketOut<T> for LoginStartPacket {
-    fn write(&self, writer: &mut PacketWriter<T>) {
-        writer.write_str(self.username.as_str());
-        writer.write_uuid(self.uuid);
-    }
-}
-
-impl PacketSend for LoginStartPacket {}

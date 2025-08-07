@@ -1628,6 +1628,144 @@ impl<T: MinecraftType> PacketWritable for Array<T> {
 
 impl<T: MinecraftType> MinecraftType for Array<T> {}
 
+// a very common type of arrays
+// it is implemented in a way that is more optimized and more convenient
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+
+pub struct ByteArray {
+    values: Vec<u8>,
+}
+
+impl Debug for ByteArray {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.values))
+    }
+}
+
+impl Into<Vec<u8>> for ByteArray {
+    fn into(self) -> Vec<u8> {
+        self.values
+    }
+}
+
+impl From<Vec<u8>> for ByteArray {
+    fn from(values: Vec<u8>) -> Self {
+        Self { values }
+    }
+}
+
+impl From<&[u8]> for ByteArray {
+    fn from(slice: &[u8]) -> Self {
+        Self {
+            values: slice.to_vec(),
+        }
+    }
+}
+
+impl ByteArray {
+    pub fn new(values: Vec<u8>) -> Self {
+        Self { values: values }
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+}
+
+impl Deref for ByteArray {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl PacketReadable for ByteArray {
+    fn read(stream: &mut impl Read) -> Self {
+        let values_count = VarInt::read(stream).get_value() as usize;
+        let mut values: Vec<u8> = Vec::with_capacity(values_count);
+        stream.read_exact(&mut values).expect(READ_ERROR);
+        Self { values: values }
+    }
+}
+
+impl PacketWritable for ByteArray {
+    fn write(&self, stream: &mut impl Write) {
+        VarInt::new(self.values.len() as i32).write(stream);
+        stream.write(&self.values);
+    }
+}
+
+impl MinecraftType for ByteArray {}
+
+// a very common type of arrays
+// it is implemented in a way that is more optimized and more convenient
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+
+pub struct UnsizedByteArray {
+    values: Vec<u8>,
+}
+
+impl Debug for UnsizedByteArray {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.values))
+    }
+}
+
+impl Into<Vec<u8>> for UnsizedByteArray {
+    fn into(self) -> Vec<u8> {
+        self.values
+    }
+}
+
+impl From<Vec<u8>> for UnsizedByteArray {
+    fn from(values: Vec<u8>) -> Self {
+        Self { values }
+    }
+}
+
+impl From<&[u8]> for UnsizedByteArray {
+    fn from(slice: &[u8]) -> Self {
+        Self {
+            values: slice.to_vec(),
+        }
+    }
+}
+
+impl UnsizedByteArray {
+    pub fn new(values: Vec<u8>) -> Self {
+        Self { values: values }
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+}
+
+impl Deref for UnsizedByteArray {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl PacketReadable for UnsizedByteArray {
+    fn read(stream: &mut impl Read) -> Self {
+        let mut values: Vec<u8> = Vec::new();
+        stream.read_to_end(&mut values).expect(READ_ERROR);
+        Self { values: values }
+    }
+}
+
+impl PacketWritable for UnsizedByteArray {
+    fn write(&self, stream: &mut impl Write) {
+        stream.write(&self.values);
+    }
+}
+
+impl MinecraftType for UnsizedByteArray {}
+
 macro_rules! impl_minecraft_type_for_tuple {
     // The macro takes two lists:
     //  - $($T:ident),+ : A list of generic type names (e.g., T0, T1, T2)

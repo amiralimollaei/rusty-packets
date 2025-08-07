@@ -168,12 +168,12 @@ impl Client {
                 }
                 mcp::server::login::LoginSuccessPacket::ID => {
                     let packet = mcp::server::login::LoginSuccessPacket::from_packet(raw_packet);
-                    // send login acknowledged packet to move to configuration phase
-                    mcp::client::login::LoginAcknowledgedPacket::new().send(stream);
                     get_logger().info(format!(
                         "Login Finished! properties:{:?}",
                         packet.get_properties()
                     ));
+                    // send login acknowledged packet to move to configuration phase
+                    mcp::client::login::LoginAcknowledgedPacket.send(stream);
                     // set state to configuration
                     self.state = ConnectionState::Configuration;
                     break;
@@ -433,7 +433,7 @@ impl Client {
                     let packet = mcp::server::play::KeepAlivePacket::from_packet(raw_packet);
                     get_logger().debug(format!("KeepAlive: {:?}", packet));
                     // respond to keepalive packet
-                    mcp::client::play::KeepAlivePacket::new(*packet.get_id()).send(stream);
+                    mcp::client::play::KeepAlivePacket { keepalive_id: (*packet.get_id()).into() }.send(stream);
                 }
 
                 mcp::server::play::LoginPacket::ID => {

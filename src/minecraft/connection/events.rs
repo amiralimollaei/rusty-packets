@@ -10,7 +10,7 @@ pub enum EventPriority {
     Normal = 0,
     High = 1,
     Highest = 2,
- // Monitor = 3, // can not mutate the event but has the highest priority
+ // Monitor = 3, // can not mutate the event but always executes
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
