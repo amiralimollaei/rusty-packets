@@ -1760,7 +1760,7 @@ impl PacketReadable for UnsizedByteArray {
 
 impl PacketWritable for UnsizedByteArray {
     fn write(&self, stream: &mut impl Write) {
-        stream.write(&self.values);
+        stream.write(&self.values).expect(WRITE_ERROR);
     }
 }
 

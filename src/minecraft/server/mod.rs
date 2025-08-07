@@ -6,9 +6,3 @@ pub mod play;
 
 mod location;
 pub use location::Location;
-
-// play
-
-
-
-// TODO: implement missing packets

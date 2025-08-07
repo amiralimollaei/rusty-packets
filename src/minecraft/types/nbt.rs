@@ -8,7 +8,10 @@ use std::{
 use cesu8;
 use flate2::bufread::GzDecoder;
 
-use crate::{minecraft::types::MinecraftType, utils::{read_bytes, read_n_bytes, PacketReadable, PacketWritable}};
+use crate::{
+    minecraft::types::MinecraftType,
+    utils::{PacketReadable, PacketWritable, read_bytes, read_n_bytes},
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 // represents all possible NBT types
@@ -18,14 +21,14 @@ pub enum NBTType {
     Short,              // A single signed, big endian 16-bit integer
     Int,                // A single signed, big endian 32-bit integer
     Long,               // A single signed, big endian 64-bit integer
-    Float, // A single, big endian IEEE-754 single-precision floating point number (NaN possible)
-    Double, // A single, big endian IEEE-754 double-precision floating point number (NaN possible)
-    ByteArray, // A length-prefixed array of signed bytes. The prefix is a signed integer (thus 4 bytes)
-    String, // A length-prefixed modified UTF-8 string. The prefix is an unsigned short (thus 2 bytes)
+    Float,              // A single, big endian IEEE-754 single-precision floating point number (NaN possible)
+    Double,             // A single, big endian IEEE-754 double-precision floating point number (NaN possible)
+    ByteArray,          // A length-prefixed array of signed bytes. The prefix is a signed integer (thus 4 bytes)
+    String,             // A length-prefixed modified UTF-8 string. The prefix is an unsigned short (thus 2 bytes)
     List(Box<NBTType>), // A list of nameless tags with the same type. prefixed with the Type ID and length as a signed integer (a thus 5 bytes).
     Compound,           // A list of named tags with variable types, Order is not guaranteed.
-    IntArray, // A length-prefixed array of signed integers. The prefix is a signed integer (thus 4 bytes) and indicates the number of 4 byte integers.
-    LongArray, // A length-prefixed array of signed longs. The prefix is a signed integer (thus 4 bytes) and indicates the number of 8 byte longs.
+    IntArray,           // A length-prefixed array of signed integers. The prefix is a signed integer (thus 4 bytes) and indicates the number of 4 byte integers.
+    LongArray,          // A length-prefixed array of signed longs. The prefix is a signed integer (thus 4 bytes) and indicates the number of 8 byte longs.
 }
 
 impl NBTType {
@@ -398,22 +401,3 @@ impl PacketReadable for NBTValue {
 }
 
 impl MinecraftType for NBTValue {}
-/*
-fn nbt_test() {
-    let nbt_value = NBTValue::from_nbt("bigtest.nbt").expect("Error while reading nbt file");
-
-    let now = Instant::now();
-    {
-        for _ in 0..10000 {
-            // make a memory stream
-            let mut mem: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-            nbt_value.write_to_stream(&mut mem, true);
-            mem.seek(std::io::SeekFrom::Start(0)).unwrap();
-            // should be the same after we read it
-            assert_eq!(nbt_value, NBTValue::from_stream(&mut mem, true));
-        }
-    }
-    let elapsed = now.elapsed();
-    println!("Elapsed: {:.2?}", elapsed);
-}
-*/

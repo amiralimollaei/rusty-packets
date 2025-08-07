@@ -1,7 +1,3 @@
-pub mod client;
-pub mod server;
-//pub mod field;
-
 mod packet;
 
 use std::io::{Cursor, Read, Seek, Write};

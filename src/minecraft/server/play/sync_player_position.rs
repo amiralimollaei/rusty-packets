@@ -1,18 +1,28 @@
 use std::io::{Read, Seek, Write};
 
-use crate::minecraft::packets::{server::Location, ConnectionState, Packet, PacketIn, PacketOut, PacketReader, PacketRecv, PacketSend, PacketWriter};
+use crate::minecraft::{
+    packets::{
+        ConnectionState, Packet, PacketIn, PacketOut, PacketReader, PacketRecv, PacketSend,
+        PacketWriter,
+    },
+    server::Location,
+};
 
 #[derive(Debug)]
 pub struct SyncPlayerPositionPacket {
     location: Location, // contains the location of a player
-    flags: i8,          // When the value of the this byte masked is zero the field is absolute, otherwise relative.
-    teleport_id: i32    // VarInt: the client should respond with the same id  
+    flags: i8, // When the value of the this byte masked is zero the field is absolute, otherwise relative.
+    teleport_id: i32, // VarInt: the client should respond with the same id
 }
 
 impl SyncPlayerPositionPacket {
     #[inline]
     pub fn new(location: Location, flags: i8, teleport_id: i32) -> Self {
-        Self { location: location, flags: flags, teleport_id: teleport_id }
+        Self {
+            location: location,
+            flags: flags,
+            teleport_id: teleport_id,
+        }
     }
 
     pub fn get_location(&self) -> &Location {
@@ -29,14 +39,33 @@ impl SyncPlayerPositionPacket {
 
     pub fn apply_changes(&self, location: Location) -> Location {
         let mut new_location = location.clone();
-        new_location.set_x(if (self.flags & 0x01) == 0 {self.location.get_x()} else {new_location.get_x()+self.location.get_x()});
-        new_location.set_y(if (self.flags & 0x02) == 0 {self.location.get_y()} else {new_location.get_y()+self.location.get_y()});
-        new_location.set_z(if (self.flags & 0x04) == 0 {self.location.get_z()} else {new_location.get_z()+self.location.get_z()});
-        new_location.set_yaw(if (self.flags & 0x08) == 0 {self.location.get_yaw()} else {new_location.get_yaw()+self.location.get_yaw()});
-        new_location.set_pitch(if (self.flags & 0x10) == 0 {self.location.get_pitch()} else {new_location.get_pitch()+self.location.get_pitch()});
+        new_location.set_x(if (self.flags & 0x01) == 0 {
+            self.location.get_x()
+        } else {
+            new_location.get_x() + self.location.get_x()
+        });
+        new_location.set_y(if (self.flags & 0x02) == 0 {
+            self.location.get_y()
+        } else {
+            new_location.get_y() + self.location.get_y()
+        });
+        new_location.set_z(if (self.flags & 0x04) == 0 {
+            self.location.get_z()
+        } else {
+            new_location.get_z() + self.location.get_z()
+        });
+        new_location.set_yaw(if (self.flags & 0x08) == 0 {
+            self.location.get_yaw()
+        } else {
+            new_location.get_yaw() + self.location.get_yaw()
+        });
+        new_location.set_pitch(if (self.flags & 0x10) == 0 {
+            self.location.get_pitch()
+        } else {
+            new_location.get_pitch() + self.location.get_pitch()
+        });
         new_location
     }
-        
 }
 
 impl Packet for SyncPlayerPositionPacket {
@@ -56,7 +85,7 @@ impl<T: Read + Seek> PacketIn<T> for SyncPlayerPositionPacket {
         Self {
             location: Location::new(x, y, z, yaw, pitch),
             flags: flags,
-            teleport_id: teleport_id
+            teleport_id: teleport_id,
         }
     }
 }
