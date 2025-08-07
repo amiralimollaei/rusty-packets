@@ -23,7 +23,7 @@ mod sync_player_position;
 pub use sync_player_position::SyncPlayerPositionPacket;
 
 mod play_set_held_item;
-pub use play_set_held_item::PlaySetHeldItemPacket;
+pub use play_set_held_item::SetHeldItemPacket;
 
 mod keepalive;
 pub use keepalive::KeepAlivePacket;

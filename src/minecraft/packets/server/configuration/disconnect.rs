@@ -1,40 +1,19 @@
-use std::io::{Read, Seek, Write};
+use crate::minecraft::types::MinecraftType;
+use minecraft_type_derive::MinecraftType;
 
-use crate::minecraft::types::NBTValue;
-use crate::minecraft::packets::{ConnectionState, Packet, PacketIn, PacketOut, PacketReader, PacketRecv, PacketSend, PacketWriter};
+use crate::utils::{PacketReadable, PacketWritable};
 
-#[derive(Debug)]
+use crate::minecraft::{
+    packets::{ConnectionState, Packet},
+    types,
+};
+
+#[derive(MinecraftType, Clone, Debug)]
 pub struct DisconnectPacket {
-    reason: NBTValue,
-}
-
-impl DisconnectPacket {
-    #[inline]
-    pub fn new(reason: NBTValue) -> Self {
-        Self { reason }
-    }
-
-    pub fn get_reason(&self) -> &NBTValue {
-        &self.reason
-    }
+    pub reason: types::NBTValue,
 }
 
 impl Packet for DisconnectPacket {
     const ID: i32 = 0x02;
     const PHASE: ConnectionState = ConnectionState::Configuration;
 }
-
-impl<T: Read + Seek> PacketIn<T> for DisconnectPacket {
-    fn read(reader: &mut PacketReader<T>) -> Self {
-        Self { reason: reader.read_nbt() }
-    }
-}
-
-impl<T: Write + Seek> PacketOut<T> for DisconnectPacket {
-    fn write(&self, writer: &mut PacketWriter<T>) {
-        writer.write_nbt(self.reason.clone());
-    }
-}
-
-impl PacketRecv for DisconnectPacket {}
-impl PacketSend for DisconnectPacket {}

@@ -6,26 +6,8 @@ use crate::minecraft::packets::{
 
 #[derive(Debug)]
 pub struct PluginMessagesPacket {
-    channel: String,
-    data: Vec<u8>,
-}
-
-impl PluginMessagesPacket {
-    #[inline]
-    pub fn new(channel: String, data: Vec<u8>) -> Self {
-        Self {
-            channel: channel,
-            data: data,
-        }
-    }
-
-    pub fn get_channel(&self) -> String {
-        self.channel.clone()
-    }
-
-    pub fn get_data(&self) -> Vec<u8> {
-        self.data.clone()
-    }
+    pub channel: String,
+    pub data: Vec<u8>,
 }
 
 impl Packet for PluginMessagesPacket {

@@ -239,7 +239,7 @@ impl Client {
                         "CookieRequestPacket: {:?}",
                         packet
                     ));
-                    mcp::client::configuration::CookieResponsePacket::new(packet.get_key(), None)
+                    mcp::client::configuration::CookieResponsePacket::new(packet.key.to_string(), None)
                         .send(stream);
                 }
                 mcp::server::configuration::PluginMessagesPacket::ID => {
@@ -273,7 +273,7 @@ impl Client {
                         mcp::server::configuration::KeepAlivePacket::from_packet(raw_packet);
                     // respond to keepalive packet
                     mcp::client::configuration::KeepAlivePacket::new(
-                        *keepalive.get_id(),
+                        keepalive.get_id(),
                     )
                     .send(stream);
                 }
@@ -288,7 +288,7 @@ impl Client {
                         mcp::server::configuration::RegistryDataPacket::from_packet(raw_packet);
                     get_logger().warn(format!(
                         "WARNING: Ignored registry data packet: {:?}",
-                        packet
+                        packet.registry_id
                     ));
                 }
 
@@ -368,8 +368,8 @@ impl Client {
                 get_logger().info(format!("Difficulty Changed: {:?}", packet));
             }
 
-            mcp::server::play::PlaySetHeldItemPacket::ID => {
-                let packet = mcp::server::play::PlaySetHeldItemPacket::from_packet(raw_packet);
+            mcp::server::play::SetHeldItemPacket::ID => {
+                let packet = mcp::server::play::SetHeldItemPacket::from_packet(raw_packet);
                 get_logger().info(format!("Held Slot Changed: {:?}", packet));
             }
 
