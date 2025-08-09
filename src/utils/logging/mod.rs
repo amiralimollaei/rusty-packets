@@ -4,7 +4,7 @@ use crate::utils::ansi::{string::AnsiString, AnsiColor, ColorMode};
 
 pub static LOGGER: Logger<'static> = Logger {
     name: "main",
-    level: 2,
+    level: 3,
 };
 
 pub fn get_logger() -> &'static Logger<'static> {

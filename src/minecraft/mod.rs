@@ -1,4 +1,4 @@
-pub mod connection;
+pub mod application;
 pub mod packets;
 pub mod text;
 pub mod types;

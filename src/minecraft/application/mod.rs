@@ -1,19 +1,14 @@
-mod events;
+// mod events;
 
 // implements a connection loop
 use std::net::{TcpStream, ToSocketAddrs};
 
 use std::time::Duration;
 
-use crate::minecraft::client::configuration::ClientMainHand;
-use crate::minecraft::server::status::StatusResponse;
-use crate::minecraft::packets::set_threshold;
-use crate::minecraft::{client, server, types, PROTOCOL_VERSION};
-
+use super::client::configuration::ClientMainHand;
 use super::server::Location;
-use super::packets::{
-    ConnectionState, Packet, PacketContainer, PacketIn, PacketOut, PacketRecv, PacketSend,
-};
+use super::{PROTOCOL_VERSION, client, server, types};
+use super::packets::{ConnectionState, Packet, PacketContainer, PacketRecv, PacketSend, set_threshold};
 
 use super::super::utils::logging::get_logger;
 
@@ -75,7 +70,7 @@ impl Client {
         }
     }
 
-    pub fn status_request(&mut self) -> StatusResponse {
+    pub fn status_request(&mut self) -> server::status::StatusResponse {
         let mut stream = connect(&self.hostname, self.port);
 
         // send handshake start packet
@@ -157,8 +152,7 @@ impl Client {
                     panic!()
                 }
                 server::login::EncryptionRequestPacket::ID => {
-                    let packet =
-                        server::login::EncryptionRequestPacket::from_packet(raw_packet);
+                    let packet = server::login::EncryptionRequestPacket::from_packet(raw_packet);
                     if packet.should_authenticate() {
                         get_logger().error(format!("Online mode is not suported!"));
                     }
@@ -205,8 +199,7 @@ impl Client {
                     let packet = server::login::CookieRequest::from_packet(raw_packet);
                     get_logger().warn(format!("LoginCookieRequest: {:?}", packet));
 
-                    client::login::CookieResponsePacket::new(packet.get_key(), None)
-                        .send(stream);
+                    client::login::CookieResponsePacket::new(packet.get_key(), None).send(stream);
                 }
                 id => {
                     get_logger().error(format!(
@@ -223,7 +216,17 @@ impl Client {
         assert_eq!(self.state, ConnectionState::Configuration);
 
         // send a default client information packet, otherwise we might not be able to join
-        client::configuration::ClientInformationPacket::default().send(stream);
+        client::configuration::ClientInformationPacket::new(
+            self.get_locale(),
+            self.get_view_distance(),
+            client::configuration::ClientChatMode::Enabled,
+            true,
+            0x7F,
+            self.get_main_hand(),
+            false,
+            self.allows_server_listings(),
+        )
+        .send(stream);
 
         // configuration phase loop
         loop {
@@ -246,16 +249,14 @@ impl Client {
                     get_logger().warn(format!("Ignoring login plugin message: {:?}", packet))
                 }
                 server::configuration::DisconnectPacket::ID => {
-                    let packet =
-                        server::configuration::DisconnectPacket::from_packet(raw_packet);
+                    let packet = server::configuration::DisconnectPacket::from_packet(raw_packet);
                     get_logger().error(format!("Configuration Failed!: {:?}", packet));
                     panic!();
                 }
 
                 server::configuration::ConfigurationFinishPacket::ID => {
-                    let packet = server::configuration::ConfigurationFinishPacket::from_packet(
-                        raw_packet,
-                    );
+                    let packet =
+                        server::configuration::ConfigurationFinishPacket::from_packet(raw_packet);
                     get_logger().info(format!("Configuration Finished!: {:?}", packet));
                     // send finish configuration acknowledged packet
                     client::configuration::ConfigurationAcknowledgedPacket.send(stream);
@@ -265,8 +266,7 @@ impl Client {
                 }
 
                 server::configuration::KeepAlivePacket::ID => {
-                    let keepalive =
-                        server::configuration::KeepAlivePacket::from_packet(raw_packet);
+                    let keepalive = server::configuration::KeepAlivePacket::from_packet(raw_packet);
                     // respond to keepalive packet
                     client::configuration::KeepAlivePacket {
                         keepalive_id: keepalive.keepalive_id,
@@ -275,14 +275,12 @@ impl Client {
                 }
 
                 server::configuration::ResetChatPacket::ID => {
-                    let packet =
-                        server::configuration::ResetChatPacket::from_packet(raw_packet);
+                    let packet = server::configuration::ResetChatPacket::from_packet(raw_packet);
                     get_logger().info(format!("ResetChatPacket: {:?}", packet));
                 }
 
                 server::configuration::RegistryDataPacket::ID => {
-                    let packet =
-                        server::configuration::RegistryDataPacket::from_packet(raw_packet);
+                    let packet = server::configuration::RegistryDataPacket::from_packet(raw_packet);
                     get_logger().warn(format!(
                         "WARNING: Ignored registry data packet: {:?}",
                         packet.registry_id
@@ -299,9 +297,8 @@ impl Client {
                 }
 
                 server::configuration::RemoveResourcePackPacket::ID => {
-                    let packet = server::configuration::RemoveResourcePackPacket::from_packet(
-                        raw_packet,
-                    );
+                    let packet =
+                        server::configuration::RemoveResourcePackPacket::from_packet(raw_packet);
                     get_logger().warn(format!(
                         "WARNING: Ignored remove resource pack packet: {:?}",
                         packet
@@ -329,8 +326,7 @@ impl Client {
                 }
 
                 server::configuration::FeatureFlagsPacket::ID => {
-                    let packet =
-                        server::configuration::FeatureFlagsPacket::from_packet(raw_packet);
+                    let packet = server::configuration::FeatureFlagsPacket::from_packet(raw_packet);
                     get_logger().info(format!("Feature Flags: {:?}", packet));
                 }
 
@@ -430,9 +426,11 @@ impl Client {
 
                 server::play::KeepAlivePacket::ID => {
                     let packet = server::play::KeepAlivePacket::from_packet(raw_packet);
-                    get_logger().debug(format!("KeepAlive: {:?}", packet));
                     // respond to keepalive packet
-                    client::play::KeepAlivePacket { keepalive_id: (*packet.get_id()).into() }.send(stream);
+                    client::play::KeepAlivePacket {
+                        keepalive_id: (*packet.get_id()).into(),
+                    }
+                    .send(stream);
                 }
 
                 server::play::LoginPacket::ID => {

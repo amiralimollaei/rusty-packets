@@ -8,8 +8,6 @@ use crate::minecraft::{
     types,
 };
 
-use crate::minecraft::connection::Client;
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ClientChatMode {
     Enabled = 0,
@@ -70,19 +68,6 @@ impl ClientInformationPacket {
             ClientMainHand::Right,
             false,
             true,
-        )
-    }
-
-    pub fn from_client(client: Client) -> Self {
-        Self::new(
-            client.get_locale(),
-            client.get_view_distance(),
-            ClientChatMode::Enabled,
-            true,
-            0x7F,
-            client.get_main_hand(),
-            false,
-            client.allows_server_listings(),
         )
     }
 }

@@ -1,14 +1,14 @@
 mod minecraft;
 mod utils;
 
-use minecraft::connection::Client;
+use minecraft::application::Client;
 
 // use utils::logging::get_logger;
 
 
 fn main() {
     // initialize the client
-    let mut client = Client::new("127.0.0.1", 55916, "Entity");
+    let mut client = Client::new("127.0.0.1", 25568, "Entity");
     client.connect();
     /*
     let statusresponse = client.ping();
