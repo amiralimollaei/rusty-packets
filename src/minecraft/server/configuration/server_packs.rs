@@ -10,9 +10,9 @@ use crate::minecraft::{
 
 #[derive(MinecraftType, Clone, Debug)]
 pub struct KnownServerPack {
-    namespace: types::String,
-    id: types::String,
-    version: types::String,
+    pub namespace: types::String,
+    pub id: types::String,
+    pub version: types::String,
 }
 
 #[derive(MinecraftType, Clone, Debug)]

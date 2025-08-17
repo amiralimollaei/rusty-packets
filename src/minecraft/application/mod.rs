@@ -206,11 +206,11 @@ impl Client {
                     let packet = server::login::PluginRequestPacket::from_packet(raw_packet);
                     get_logger().info(format!("LoginPluginRequestPacket: {:?}", packet));
 
-                    client::login::LoginPluginResponsePacket::new(
-                        packet.get_message_id(),
-                        false,
-                        Vec::new(),
-                    )
+                    client::login::LoginPluginResponsePacket {
+                        message_id: packet.message_id.clone(),
+                        successful: false.into(),
+                        data: Vec::new().into(),
+                    }
                     .send(stream);
                 }
                 server::login::CookieRequest::ID => {

@@ -1907,35 +1907,3 @@ impl_from_tuple!(D0, D1, D2; S0, S1, S2; 0, 1, 2);
 impl_from_tuple!(D0, D1, D2, D3; S0, S1, S2, S3; 0, 1, 2, 3);
 impl_from_tuple!(D0, D1, D2, D3, D4; S0, S1, S2, S3, S4; 0, 1, 2, 3, 4);
 impl_from_tuple!(D0, D1, D2, D3, D4, D5; S0, S1, S2, S3, S4, S5; 0, 1, 2, 3, 4, 5);
-
-#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Null;
-
-impl Debug for Null {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Null")
-    }
-}
-
-impl Null {
-    #[inline]
-    pub fn new() -> Self {
-        Self { }
-    }
-}
-
-impl PacketWritable for Null {
-    fn write(&self, stream: &mut impl Write) {
-        // nothing to write
-    }
-}
-
-impl PacketReadable for Null {
-    #[inline]
-    fn read(stream: &mut impl Read) -> Self {
-        // nothing to read
-        Self {}
-    }
-}
-
-impl MinecraftType for Null {}

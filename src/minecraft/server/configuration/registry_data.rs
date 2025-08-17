@@ -8,8 +8,8 @@ use crate::minecraft::types::MinecraftType;
 
 #[derive(MinecraftType, Debug, Clone)]
 pub struct RegistryEntry {
-    id: types::Identifier,
-    data: types::Optional<types::NBTValue>
+    pub id: types::Identifier,
+    pub data: types::Optional<types::NBTValue>
 }
 
 #[derive(MinecraftType, Debug, Clone)]

@@ -13,12 +13,6 @@ pub struct KeepAlivePacket {
     pub keepalive_id: types::Long,
 }
 
-impl KeepAlivePacket {
-    pub fn get_id(&self) -> i64 {
-        self.keepalive_id.into()
-    }
-}
-
 impl Packet for KeepAlivePacket {
     const ID: i32 = 0x04;
     const PHASE: ConnectionState = ConnectionState::Configuration;
