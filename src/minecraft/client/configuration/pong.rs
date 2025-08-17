@@ -9,11 +9,11 @@ use crate::minecraft::{
 };
 
 #[derive(MinecraftType, Clone, Debug)]
-pub struct PingPacket {
-    timestamp: types::Long,
+pub struct PongPacket {
+    pub timestamp: types::Int,
 }
 
-impl Packet for PingPacket {
+impl Packet for PongPacket {
     const ID: i32 = 0x05;
     const PHASE: ConnectionState = ConnectionState::Configuration;
 }

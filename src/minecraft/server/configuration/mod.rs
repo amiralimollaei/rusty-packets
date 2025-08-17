@@ -22,8 +22,8 @@ pub use feature_flags::FeatureFlagsPacket;
 mod plugin_message;
 pub use plugin_message::PluginMessagesPacket;
 
-mod pong;
-pub use pong::PongPacket;
+mod ping;
+pub use ping::PingPacket;
 
 mod reset_chat;
 pub use reset_chat::ResetChatPacket;

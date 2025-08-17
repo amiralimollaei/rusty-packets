@@ -15,5 +15,5 @@ pub use client_information::{ClientMainHand, ClientChatMode};
 mod cookie_response;
 pub use cookie_response::CookieResponsePacket;
 
-mod ping;
-pub use ping::PingPacket;
+mod pong;
+pub use pong::PongPacket;

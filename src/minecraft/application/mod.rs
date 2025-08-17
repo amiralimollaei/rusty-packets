@@ -214,6 +214,12 @@ impl Client {
 
     fn configure(&mut self, stream: &mut TcpStream) {
         assert_eq!(self.state, ConnectionState::Configuration);
+        
+        // TODO: maybe act as a fabric client
+        // client::configuration::PluginMessagePakcet {
+        //     channel: "minecraft:brand",
+        //     data: "fabric".as_bytes().to_vec()
+        // }.send(stream);
 
         // send a default client information packet, otherwise we might not be able to join
         client::configuration::ClientInformationPacket::new(
@@ -250,7 +256,7 @@ impl Client {
                 }
                 server::configuration::DisconnectPacket::ID => {
                     let packet = server::configuration::DisconnectPacket::from_packet(raw_packet);
-                    get_logger().error(format!("Configuration Failed!: {:?}", packet));
+                    get_logger().error(format!("Configuration Failed! reason: {:?}", packet.reason));
                     panic!();
                 }
 
@@ -270,6 +276,15 @@ impl Client {
                     // respond to keepalive packet
                     client::configuration::KeepAlivePacket {
                         keepalive_id: keepalive.keepalive_id,
+                    }
+                    .send(stream);
+                }
+
+                server::configuration::PingPacket::ID => {
+                    let packet = server::configuration::PingPacket::from_packet(raw_packet);
+                    // respond to keepalive packet
+                    client::configuration::PongPacket {
+                        timestamp: packet.timestamp,
                     }
                     .send(stream);
                 }
@@ -330,8 +345,8 @@ impl Client {
                     get_logger().info(format!("Feature Flags: {:?}", packet));
                 }
 
-                server::configuration::PongPacket::ID => {
-                    let packet = server::configuration::PongPacket::from_packet(raw_packet);
+                server::configuration::PingPacket::ID => {
+                    let packet = server::configuration::PingPacket::from_packet(raw_packet);
                     get_logger().info(format!("PongPacket: {:?}", packet));
                 }
 
