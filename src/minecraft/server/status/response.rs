@@ -1,13 +1,18 @@
-use std::io::{Read, Seek, Write};
+use crate::minecraft::types::MinecraftType;
+use minecraft_type_derive::MinecraftType;
+
+use crate::utils::{PacketReadable, PacketWritable};
+
+use crate::minecraft::{
+    packets::{ConnectionState, Packet},
+    types,
+};
 
 use base64::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::minecraft::packets::{
-    ConnectionState, Packet, PacketIn, PacketOut, PacketReader, PacketRecv, PacketSend, PacketWriter
-};
 use crate::utils::parce_text_component;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -131,19 +136,13 @@ impl StatusResponse {
     }
 }
 
+#[derive(MinecraftType, Debug, Clone)]
 pub struct ResponsePacket {
-    field_status: String,
+    pub field_status: types::String,
 }
 
 impl ResponsePacket {
-    #[inline]
-    pub fn new(status: String) -> Self {
-        Self {
-            field_status: status,
-        }
-    }
-
-    pub fn get_status(&self) -> StatusResponse {
+    pub fn deseralize(&self) -> StatusResponse {
         StatusResponse::from_json(self.field_status.to_string().as_str())
     }
 }
@@ -152,20 +151,3 @@ impl Packet for ResponsePacket {
     const ID: i32 = 0x00;
     const PHASE: ConnectionState = ConnectionState::Status;
 }
-
-impl<T: Read + Seek> PacketIn<T> for ResponsePacket {
-    fn read(reader: &mut PacketReader<T>) -> Self {
-        Self {
-            field_status: reader.read_string(),
-        }
-    }
-}
-
-impl<T: Write + Seek> PacketOut<T> for ResponsePacket {
-    fn write(&self, writer: &mut PacketWriter<T>) {
-        writer.write_str(self.field_status.as_str());
-    }
-}
-
-impl PacketRecv for ResponsePacket {}
-impl PacketSend for ResponsePacket {}

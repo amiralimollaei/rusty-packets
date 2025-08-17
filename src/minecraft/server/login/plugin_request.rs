@@ -5,7 +5,7 @@ use crate::minecraft::packets::{
     PacketWriter,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PluginRequestPacket {
     message_id: i32,
     channel: String,

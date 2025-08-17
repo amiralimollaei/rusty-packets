@@ -6,7 +6,6 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
 use super::client::configuration::ClientMainHand;
-use super::server::Location;
 use super::{PROTOCOL_VERSION, client, server, types};
 use super::packets::{ConnectionState, Packet, PacketContainer, PacketRecv, PacketSend, set_threshold};
 
@@ -35,6 +34,22 @@ fn connect(hostname: &str, port: u16) -> TcpStream {
     stream
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Location {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub yaw: f32,
+    pub pitch: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Velocity {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
 #[derive(Debug)]
 pub struct Client {
     hostname: String,
@@ -47,7 +62,9 @@ pub struct Client {
     main_hand: ClientMainHand,   // VarInt Enum: 0: left, 1: right
     allow_server_listings: bool, // Boolean: Servers usually list online players, this option should let you not show up in that list
 
+    // location and movement states
     location: Location,
+    velocity: Velocity,
 }
 
 static mut NOT_IMPLEMENTED_PACKET_IDS: Vec<i32> = Vec::new();
@@ -66,7 +83,8 @@ impl Client {
             view_distance: 8,
             main_hand: ClientMainHand::Right,
             allow_server_listings: true,
-            location: Location::new(0.0, 0.0, 0.0, 180.0, 0.0),
+            location: Location { x: 0.0, y: 0.0, z: 0.0, yaw: 180.0, pitch: 0.0 },
+            velocity: Velocity { x: 0.0, y: 0.0, z: 0.0 }
         }
     }
 
@@ -88,7 +106,7 @@ impl Client {
         client::status::RequestPacket::new().send(&mut stream);
 
         // the next packet the server sends us must be a status reponse packet
-        server::status::ResponsePacket::recv(&mut stream).get_status()
+        server::status::ResponsePacket::recv(&mut stream).deseralize()
     }
 
     pub fn get_state(&self) -> ConnectionState {
@@ -153,7 +171,7 @@ impl Client {
                 }
                 server::login::EncryptionRequestPacket::ID => {
                     let packet = server::login::EncryptionRequestPacket::from_packet(raw_packet);
-                    if packet.should_authenticate() {
+                    if packet.should_authenticate.into() {
                         get_logger().error(format!("Online mode is not suported!"));
                     }
                     get_logger().error(format!("Encryption is not suported: {:?}", packet));
@@ -163,7 +181,7 @@ impl Client {
                     let packet = server::login::LoginSuccessPacket::from_packet(raw_packet);
                     get_logger().info(format!(
                         "Login Finished! properties:{:?}",
-                        packet.get_properties()
+                        packet.properties
                     ));
                     // send login acknowledged packet to move to configuration phase
                     client::login::LoginAcknowledgedPacket.send(stream);
@@ -174,10 +192,10 @@ impl Client {
                 server::login::SetCompressionPacket::ID => {
                     let packet = server::login::SetCompressionPacket::from_packet(raw_packet);
                     // set global compression threshold
-                    set_threshold(packet.get_threshold());
+                    set_threshold(packet.threshold.into());
                     get_logger().info(format!(
                         "Set Compression: threshold={}",
-                        packet.get_threshold()
+                        packet.threshold.get_value()
                     ));
                 }
                 server::login::PluginRequestPacket::ID => {
@@ -199,7 +217,7 @@ impl Client {
                     let packet = server::login::CookieRequest::from_packet(raw_packet);
                     get_logger().warn(format!("LoginCookieRequest: {:?}", packet));
 
-                    client::login::CookieResponsePacket::new(packet.get_key(), None).send(stream);
+                    client::login::CookieResponsePacket::new(packet.key.into(), None).send(stream);
                 }
                 id => {
                     get_logger().error(format!(
@@ -345,11 +363,6 @@ impl Client {
                     get_logger().info(format!("Feature Flags: {:?}", packet));
                 }
 
-                server::configuration::PingPacket::ID => {
-                    let packet = server::configuration::PingPacket::from_packet(raw_packet);
-                    get_logger().info(format!("PongPacket: {:?}", packet));
-                }
-
                 // TODO: don't completely die just because one packet is not supported
                 id => {
                     get_logger().error(format!(
@@ -362,16 +375,43 @@ impl Client {
         }
     }
 
+    pub fn execute_synchronize_player_position_packet(&mut self, packet: &server::play::SyncPlayerPositionPacket) {
+        let flags_byte: i8 = packet.flags.into();
+        self.location.x = if (flags_byte & 0x01) == 0 {
+            packet.location.x.get_value()
+        } else {
+            self.location.x + packet.location.x.get_value()
+        };
+        self.location.y = if (flags_byte & 0x02) == 0 {
+            packet.location.y.get_value()
+        } else {
+            self.location.y + packet.location.y.get_value()
+        };
+        self.location.z = if (flags_byte & 0x04) == 0 {
+            packet.location.z.get_value()
+        } else {
+            self.location.z + packet.location.z.get_value()
+        };
+        self.location.yaw = if (flags_byte & 0x08) == 0 {
+            packet.location.yaw.get_value()
+        } else {
+            self.location.yaw + packet.location.yaw.get_value()
+        };
+        self.location.pitch = if (flags_byte & 0x10) == 0 {
+            packet.location.pitch.get_value()
+        } else {
+            self.location.pitch + packet.location.pitch.get_value()
+        };
+    }
+
     fn process_play_packet(&mut self, raw_packet: PacketContainer, stream: &mut TcpStream) {
         match raw_packet.get_id() {
             server::play::SyncPlayerPositionPacket::ID => {
                 let packet = server::play::SyncPlayerPositionPacket::from_packet(raw_packet);
-                let new_location = packet.apply_changes(self.location);
-                get_logger().info(format!("Teleported by server: {:?}", new_location));
-                self.location = new_location;
+                self.execute_synchronize_player_position_packet(&packet);
+                get_logger().info(format!("Teleported by server: {:?}", self.location));
                 // send teleport confirmation packet
-                server::play::ConfirmTeleportationPacket::new(packet.get_teleport_id())
-                    .send(stream);
+                server::play::ConfirmTeleportationPacket {teleport_id: packet.teleport_id.clone()}.send(stream);
             }
 
             server::play::ChangeDifficultyPacket::ID => {
@@ -434,7 +474,7 @@ impl Client {
                 // excluded from bundle delimiter because the server closes the connection after this packet
                 server::play::DisconnectPacket::ID => {
                     let packet = server::play::DisconnectPacket::from_packet(raw_packet);
-                    get_logger().error(format!("Disconnected: {:?}", packet.get_reason()));
+                    get_logger().error(format!("Disconnected: {:?}", packet.reason));
                     self.state = ConnectionState::Handshaking;
                     break;
                 }
@@ -443,7 +483,7 @@ impl Client {
                     let packet = server::play::KeepAlivePacket::from_packet(raw_packet);
                     // respond to keepalive packet
                     client::play::KeepAlivePacket {
-                        keepalive_id: (*packet.get_id()).into(),
+                        keepalive_id: packet.keepalive_id.clone(),
                     }
                     .send(stream);
                 }

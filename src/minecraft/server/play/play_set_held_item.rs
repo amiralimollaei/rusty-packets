@@ -1,34 +1,19 @@
-use std::io::{Read, Seek};
+use crate::minecraft::types::MinecraftType;
+use minecraft_type_derive::MinecraftType;
 
-use crate::minecraft::packets::{ConnectionState, Packet, PacketIn, PacketReader, PacketRecv};
+use crate::utils::{PacketReadable, PacketWritable};
 
-#[derive(Debug)]
+use crate::minecraft::{
+    packets::{ConnectionState, Packet},
+    types,
+};
+
+#[derive(MinecraftType, Debug, Clone)]
 pub struct SetHeldItemPacket {
-    slot: i8,
-}
-
-impl SetHeldItemPacket {
-    #[inline]
-    pub fn new(slot: i8) -> Self {
-        Self { slot: slot }
-    }
-
-    pub fn get_slot(&self) -> i8 {
-        self.slot
-    }
+    pub slot: types::Byte,
 }
 
 impl Packet for SetHeldItemPacket {
     const ID: i32 = 0x53;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-
-impl<T: Read + Seek> PacketIn<T> for SetHeldItemPacket {
-    fn read(reader: &mut PacketReader<T>) -> Self {
-        Self {
-            slot: reader.read_byte(),
-        }
-    }
-}
-
-impl PacketRecv for SetHeldItemPacket {}

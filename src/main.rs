@@ -8,7 +8,7 @@ use minecraft::application::Client;
 
 fn main() {
     // initialize the client
-    let mut client = Client::new("127.0.0.1", 25568, "Entity");
+    let mut client = Client::new("127.0.0.1", 55916, "Entity");
     client.connect();
     /*
     let statusresponse = client.ping();
