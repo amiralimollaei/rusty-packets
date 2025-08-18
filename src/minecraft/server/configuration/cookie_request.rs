@@ -2,7 +2,7 @@ use crate::minecraft::types::MinecraftType;
 use minecraft_type_derive::MinecraftType;
 
 use crate::minecraft::{
-    packets::{ConnectionState, Packet, PacketReadable, PacketWritable},
+    packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
     types,
 };
 

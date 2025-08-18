@@ -1,5 +1,5 @@
 pub mod application;
-pub mod packets;
+pub mod packet;
 pub mod text;
 pub mod types;
 pub mod client;

@@ -6,9 +6,7 @@ use crate::utils::logging::{get_log_level, get_logger};
 use flate2::Compression;
 use flate2::bufread::ZlibDecoder;
 use flate2::write::ZlibEncoder;
-use std::io::{Cursor, SeekFrom, prelude::*};
-
-use super::get_threshold;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 pub trait PacketWritable {
     fn write(&self, stream: &mut impl Write);
@@ -168,9 +166,9 @@ impl PacketContainer {
 
         let mut ansi_string = AnsiString::empty();
         ansi_string = ansi_string + AnsiString::new_colorless("[");
-        ansi_string = ansi_string + AnsiString::new_fore("🠩", Some((0, 255, 0)));
+        ansi_string = ansi_string + AnsiString::new_fore("🠩", (0, 255, 0));
         ansi_string = ansi_string + AnsiString::new_colorless("] ");
-        ansi_string = ansi_string + AnsiString::new_colorless(self.to_string().as_str());
+        ansi_string = ansi_string + AnsiString::new_colorless(&self.to_string());
         get_logger().debug(ansi_string);
     }
 
@@ -260,9 +258,9 @@ impl PacketContainer {
 
         let mut ansi_string = AnsiString::empty();
         ansi_string = ansi_string + AnsiString::new_colorless("[");
-        ansi_string = ansi_string + AnsiString::new_fore("🠯", Some((255, 0, 0)));
+        ansi_string = ansi_string + AnsiString::new_fore("🠯", (255, 0, 0));
         ansi_string = ansi_string + AnsiString::new_colorless("] ");
-        ansi_string = ansi_string + AnsiString::new_colorless(packet.to_string().as_str());
+        ansi_string = ansi_string + AnsiString::new_colorless(&packet.to_string());
         get_logger().debug(ansi_string);
 
         packet
@@ -317,4 +315,81 @@ impl<S: Read + Seek> PacketReader<S> {
     pub fn read_raw<T: MinecraftType>(&mut self) -> T {
         T::read(&mut self.stream)
     }
+}
+
+static mut THRESHOLD: i32 = -1;
+
+pub fn get_threshold() -> i32 {
+    unsafe { THRESHOLD }
+}
+
+pub fn set_threshold(thr: i32) {
+    unsafe { THRESHOLD = thr }
+}
+
+pub trait Packet {
+    const ID: i32;
+    const PHASE: ConnectionState;
+}
+
+pub trait PacketIn<T: Read + Seek>: Packet {
+    fn read(reader: &mut PacketReader<T>) -> Self;
+}
+
+pub trait PacketRecv: PacketIn<Cursor<Vec<u8>>> {
+    #[inline]
+    fn recv<S: Read>(stream: &mut S) -> Self
+    where
+        Self: Sized,
+    {
+        let mut packet_container = PacketContainer::recv(stream);
+        let mut packet_reader = packet_container.ger_reader();
+        Self::read(&mut packet_reader)
+    }
+
+    fn from_packet(packet: PacketContainer) -> Self
+    where
+        Self: Sized,
+    {
+        Self::read(&mut PacketReader::from_stream(packet.as_stream()))
+    }
+}
+
+impl<U: Packet + MinecraftType> PacketRecv for U {}
+
+impl<T: Read + Seek, U: Packet + MinecraftType> PacketIn<T> for U {
+    fn read(reader: &mut PacketReader<T>) -> Self {
+        reader.read_raw::<Self>()
+    }
+}
+
+pub trait PacketOut<T: Write + Seek>: Packet {
+    fn write(&self, writer: &mut PacketWriter<T>);
+}
+
+pub trait PacketSend: for<'a> PacketOut<&'a mut Cursor<Vec<u8>>> {
+    #[inline]
+    fn send<S: Write>(&self, stream: &mut S) {
+        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        let mut packet_writer = PacketWriter::from_stream(&mut packet_stream);
+        self.write(&mut packet_writer);
+        PacketContainer::new(Self::ID, packet_stream.get_ref().clone()).send(stream);
+    }
+}
+
+impl<U: Packet + MinecraftType> PacketSend for U {}
+
+impl<T: Write + Seek, U: Packet + MinecraftType> PacketOut<T> for U {
+    fn write(&self, writer: &mut PacketWriter<T>) {
+        writer.write_raw::<Self>(&self);
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ConnectionState {
+    Handshaking,
+    Status,
+    Login,
+    Configuration,
+    Play,
 }

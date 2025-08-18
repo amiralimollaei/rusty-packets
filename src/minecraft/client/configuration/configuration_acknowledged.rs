@@ -1,7 +1,7 @@
 use crate::minecraft::types::MinecraftType;
 use minecraft_type_derive::MinecraftType;
 
-use crate::minecraft::packets::{ConnectionState, Packet, PacketReadable, PacketWritable};
+use crate::minecraft::packet::{ConnectionState, Packet, PacketReadable, PacketWritable};
 
 #[derive(MinecraftType, Clone, Copy)]
 pub struct ConfigurationAcknowledgedPacket;

@@ -38,7 +38,7 @@ impl<'a> Logger<'a> {
         for line in message_lines {
             let astr = AnsiString::new_fore(
                 format!("[{} - {}/INFO]: ", Self::format_time(), self.name).as_str(),
-                Some((127, 127, 127)),
+                (127, 127, 127),
             ) + line;
             println!("{}", astr.to_string(&ColorMode::Limited));
         }
@@ -53,7 +53,7 @@ impl<'a> Logger<'a> {
         for line in message_lines {
             let astr = AnsiString::new_fore(
                 format!("[{} - {}/WARN]: ", Self::format_time(), self.name).as_str(),
-                Some((255, 255, 127)),
+                (255, 255, 127),
             ) + line;
             println!("{}", astr.to_string(&ColorMode::Limited));
         }
@@ -68,7 +68,7 @@ impl<'a> Logger<'a> {
         for line in message_lines {
             let astr = AnsiString::new_fore(
                 format!("[{} - {}/ERROR]: ", Self::format_time(), self.name).as_str(),
-                Some((255, 127, 127)),
+                (255, 127, 127),
             ) + line;
             println!("{}", astr.to_string(&ColorMode::Limited));
         }
@@ -83,7 +83,7 @@ impl<'a> Logger<'a> {
         for line in message_lines {
             let astr = AnsiString::new_fore(
                 format!("[{} - {}/DEBUG]: ", Self::format_time(), self.name).as_str(),
-                Some((127, 255, 255)),
+                (127, 255, 255),
             ) + line;
             println!("{}", astr.to_string(&ColorMode::Limited));
         }

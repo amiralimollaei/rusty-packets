@@ -8,7 +8,7 @@ use std::fmt::Debug;
 use std::io::{Read, Write};
 use std::ops::Deref;
 
-use crate::minecraft::packets::{PacketReadable, PacketWritable};
+use crate::minecraft::packet::{PacketReadable, PacketWritable};
 use crate::utils::read_bytes;
 
 const WRITE_ERROR: &str = "Error while writing to connection";

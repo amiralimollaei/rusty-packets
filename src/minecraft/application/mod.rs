@@ -6,7 +6,7 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
 use super::client::configuration::ClientMainHand;
-use super::packets::{
+use super::packet::{
     ConnectionState, Packet, PacketContainer, PacketRecv, PacketSend, set_threshold,
 };
 use super::{PROTOCOL_VERSION, client, server, types};

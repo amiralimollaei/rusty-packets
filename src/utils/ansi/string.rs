@@ -289,13 +289,13 @@ impl AnsiString {
     }
 
     #[inline]
-    pub fn new_fore(str: &str, fore: Option<(u8, u8, u8)>) -> AnsiString {
-        AnsiString::new(str, fore, None)
+    pub fn new_fore(str: &str, fore: (u8, u8, u8)) -> AnsiString {
+        AnsiString::new(str, Some(fore), None)
     }
 
     #[inline]
-    pub fn new_back(str: &str, back: Option<(u8, u8, u8)>) -> AnsiString {
-        AnsiString::new(str, None, back)
+    pub fn new_back(str: &str, back: (u8, u8, u8)) -> AnsiString {
+        AnsiString::new(str, None, Some(back))
     }
 
     #[inline]

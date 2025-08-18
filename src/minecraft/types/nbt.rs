@@ -9,7 +9,7 @@ use cesu8;
 use flate2::bufread::GzDecoder;
 
 use crate::{
-    minecraft::packets::{PacketReadable, PacketWritable},
+    minecraft::packet::{PacketReadable, PacketWritable},
     minecraft::types::MinecraftType,
     utils::{read_bytes, read_n_bytes},
 };
