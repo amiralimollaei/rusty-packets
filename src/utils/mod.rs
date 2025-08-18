@@ -1,11 +1,7 @@
 pub mod ansi;
-pub(crate) mod logging;
+pub mod logging;
 
-use std::io::{Cursor, SeekFrom};
-use std::io::{Read, Seek, Write};
-
-use ansi::string::AnsiString;
-use ansi::{AnsiColor, AnsiGraphicMode, AnsiGraphics};
+use ansi::{AnsiColor, AnsiGraphicMode, AnsiGraphics, string::AnsiString};
 use serde_json::{Map, Value as JsonValue};
 
 #[inline]
