@@ -6,8 +6,10 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
 use super::client::configuration::ClientMainHand;
+use super::packets::{
+    ConnectionState, Packet, PacketContainer, PacketRecv, PacketSend, set_threshold,
+};
 use super::{PROTOCOL_VERSION, client, server, types};
-use super::packets::{ConnectionState, Packet, PacketContainer, PacketRecv, PacketSend, set_threshold};
 
 use super::super::utils::logging::get_logger;
 
@@ -83,8 +85,18 @@ impl Client {
             view_distance: 8,
             main_hand: ClientMainHand::Right,
             allow_server_listings: true,
-            location: Location { x: 0.0, y: 0.0, z: 0.0, yaw: 180.0, pitch: 0.0 },
-            velocity: Velocity { x: 0.0, y: 0.0, z: 0.0 }
+            location: Location {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+                yaw: 180.0,
+                pitch: 0.0,
+            },
+            velocity: Velocity {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
         }
     }
 
@@ -103,7 +115,7 @@ impl Client {
         self.state = ConnectionState::Status;
 
         // send status request packet to get the server's motd
-        client::status::RequestPacket::new().send(&mut stream);
+        client::status::RequestPacket {}.send(&mut stream);
 
         // the next packet the server sends us must be a status reponse packet
         server::status::ResponsePacket::recv(&mut stream).deseralize()
@@ -157,7 +169,11 @@ impl Client {
         assert_eq!(self.state, ConnectionState::Login);
 
         // send login start packet
-        client::login::LoginStartPacket::new(self.username.to_string(), 0).send(stream);
+        client::login::LoginStartPacket {
+            username: self.username.clone().into(),
+            uuid: 0.into(),
+        }
+        .send(stream);
 
         // login phase loop
         loop {
@@ -232,7 +248,7 @@ impl Client {
 
     fn configure(&mut self, stream: &mut TcpStream) {
         assert_eq!(self.state, ConnectionState::Configuration);
-        
+
         // TODO: maybe act as a fabric client
         // client::configuration::PluginMessagePakcet {
         //     channel: "minecraft:brand",
@@ -274,7 +290,8 @@ impl Client {
                 }
                 server::configuration::DisconnectPacket::ID => {
                     let packet = server::configuration::DisconnectPacket::from_packet(raw_packet);
-                    get_logger().error(format!("Configuration Failed! reason: {:?}", packet.reason));
+                    get_logger()
+                        .error(format!("Configuration Failed! reason: {:?}", packet.reason));
                     panic!();
                 }
 
@@ -375,7 +392,10 @@ impl Client {
         }
     }
 
-    pub fn execute_synchronize_player_position_packet(&mut self, packet: &server::play::SyncPlayerPositionPacket) {
+    pub fn execute_synchronize_player_position_packet(
+        &mut self,
+        packet: &server::play::SyncPlayerPositionPacket,
+    ) {
         let flags_byte: i8 = packet.flags.into();
         self.location.x = if (flags_byte & 0x01) == 0 {
             packet.location.x.get_value()
@@ -411,7 +431,10 @@ impl Client {
                 self.execute_synchronize_player_position_packet(&packet);
                 get_logger().info(format!("Teleported by server: {:?}", self.location));
                 // send teleport confirmation packet
-                server::play::ConfirmTeleportationPacket {teleport_id: packet.teleport_id.clone()}.send(stream);
+                server::play::ConfirmTeleportationPacket {
+                    teleport_id: packet.teleport_id.clone(),
+                }
+                .send(stream);
             }
 
             server::play::ChangeDifficultyPacket::ID => {

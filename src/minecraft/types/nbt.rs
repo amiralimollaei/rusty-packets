@@ -9,8 +9,9 @@ use cesu8;
 use flate2::bufread::GzDecoder;
 
 use crate::{
+    minecraft::packets::{PacketReadable, PacketWritable},
     minecraft::types::MinecraftType,
-    utils::{PacketReadable, PacketWritable, read_bytes, read_n_bytes},
+    utils::{read_bytes, read_n_bytes},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]

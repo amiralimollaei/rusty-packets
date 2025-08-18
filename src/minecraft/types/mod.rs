@@ -8,7 +8,8 @@ use std::fmt::Debug;
 use std::io::{Read, Write};
 use std::ops::Deref;
 
-use crate::utils::{PacketReadable, PacketWritable, read_bytes};
+use crate::minecraft::packets::{PacketReadable, PacketWritable};
+use crate::utils::read_bytes;
 
 const WRITE_ERROR: &str = "Error while writing to connection";
 const READ_ERROR: &str = "Error while reading connection";
@@ -1133,7 +1134,7 @@ pub struct UUID {
 
 impl Debug for UUID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("\"{}\"", &self.to_string()))
+        f.write_str(&format!("\"{}\"", &self.to_hex()))
     }
 }
 
@@ -1167,7 +1168,7 @@ impl UUID {
     }
 
     // formats the UUID just like in minecraft
-    pub fn to_string(&self) -> std::string::String {
+    /*pub fn to_string(&self) -> std::string::String {
         let format: [usize; 5] = [8, 4, 4, 4, 12];
 
         let hex = format!("{:x}", self.value);
@@ -1179,7 +1180,7 @@ impl UUID {
             chunks.push(s.0);
         }
         chunks.join("-")
-    }
+    }*/
 
     // reads the UUID from a string
     #[inline]
@@ -1692,13 +1693,13 @@ impl PacketReadable for ByteArray {
 impl PacketWritable for ByteArray {
     fn write(&self, stream: &mut impl Write) {
         VarInt::new(self.values.len() as i32).write(stream);
-        stream.write(&self.values);
+        stream.write(&self.values).expect(WRITE_ERROR);
     }
 }
 
 impl MinecraftType for ByteArray {}
 
-// a very common type of arrays
+// a very common type of arrays that their size is inferred by the packet length
 // it is implemented in a way that is more optimized and more convenient
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 

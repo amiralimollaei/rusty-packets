@@ -1,10 +1,11 @@
+use crate::minecraft::types::MinecraftType;
 use minecraft_type_derive::MinecraftType;
 
-use crate::utils::{PacketReadable, PacketWritable};
+use crate::minecraft::{
+    packets::{ConnectionState, Packet, PacketReadable, PacketWritable},
+    types,
+};
 
-use crate::minecraft::packets::{ConnectionState, Packet};
-use crate::minecraft::types;
-use crate::minecraft::types::MinecraftType;
 
 #[derive(MinecraftType, Debug, Clone)]
 pub struct RegistryEntry {

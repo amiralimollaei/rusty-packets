@@ -1,17 +1,15 @@
 use crate::minecraft::types::MinecraftType;
 use minecraft_type_derive::MinecraftType;
 
-use crate::utils::{PacketReadable, PacketWritable};
-
 use crate::minecraft::{
-    packets::{ConnectionState, Packet},
+    packets::{ConnectionState, Packet, PacketReadable, PacketWritable},
     types,
 };
 
 #[derive(MinecraftType, Clone, Debug)]
 pub struct CookieResponsePacket {
     pub key: types::String,
-    pub payload: types::Optional<types::Array<types::UnsignedByte>>,
+    pub payload: types::Optional<types::ByteArray>,
 }
 
 impl Packet for CookieResponsePacket {

@@ -1,27 +1,15 @@
 use crate::minecraft::types::MinecraftType;
 use minecraft_type_derive::MinecraftType;
 
-use crate::utils::{PacketReadable, PacketWritable};
-
 use crate::minecraft::{
-    packets::{ConnectionState, Packet},
+    packets::{ConnectionState, Packet, PacketReadable, PacketWritable},
     types,
 };
 
 #[derive(MinecraftType, Debug, Clone)]
 pub struct LoginStartPacket {
-    username: types::String,
-    uuid: types::UUID,
-}
-
-impl LoginStartPacket {
-    #[inline]
-    pub fn new(username: String, uuid: u128) -> Self {
-        Self {
-            username: username.into(),
-            uuid: uuid.into(),
-        }
-    }
+    pub username: types::String,
+    pub uuid: types::UUID,
 }
 
 impl Packet for LoginStartPacket {

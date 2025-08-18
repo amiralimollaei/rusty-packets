@@ -2,7 +2,7 @@ mod packet;
 
 use std::io::{Cursor, Read, Seek, Write};
 
-pub use packet::{PacketContainer, PacketReader, PacketWriter};
+pub use packet::{PacketContainer, PacketReader, PacketWriter, PacketWritable, PacketReadable};
 
 use crate::minecraft::types::MinecraftType;
 

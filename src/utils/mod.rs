@@ -28,26 +28,6 @@ pub fn read_n_bytes(n: usize, stream: &mut impl std::io::Read) -> Vec<u8> {
     bytes
 }
 
-pub trait PacketWritable {
-    fn write(&self, stream: &mut impl Write);
-}
-
-pub trait PacketReadable {
-    fn read(stream: &mut impl Read) -> Self;
-    fn from_bytes(bytes: &mut Vec<u8>) -> Self
-    where
-        Self: Sized,
-    {
-        // create a memory stream
-        let mut stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        stream.write_all(bytes).unwrap();
-        // go back to the start of the memory stream
-        stream.seek(SeekFrom::Start(0)).unwrap();
-        // read the memory stream
-        Self::read(&mut stream)
-    }
-}
-
 pub fn parse_color(value: &Map<String, JsonValue>) -> Option<(u8, u8, u8)> {
     let c = value.get("color");
     match c {

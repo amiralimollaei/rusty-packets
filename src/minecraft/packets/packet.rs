@@ -2,13 +2,33 @@
 use crate::minecraft::types::{self, MinecraftType};
 use crate::utils::ansi::string::AnsiString;
 use crate::utils::logging::{get_log_level, get_logger};
-use crate::utils::{PacketReadable, PacketWritable};
+
 use flate2::Compression;
 use flate2::bufread::ZlibDecoder;
 use flate2::write::ZlibEncoder;
 use std::io::{Cursor, SeekFrom, prelude::*};
 
 use super::get_threshold;
+
+pub trait PacketWritable {
+    fn write(&self, stream: &mut impl Write);
+}
+
+pub trait PacketReadable {
+    fn read(stream: &mut impl Read) -> Self;
+    fn from_bytes(bytes: &mut Vec<u8>) -> Self
+    where
+        Self: Sized,
+    {
+        // create a memory stream
+        let mut stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        stream.write_all(bytes).unwrap();
+        // go back to the start of the memory stream
+        stream.seek(SeekFrom::Start(0)).unwrap();
+        // read the memory stream
+        Self::read(&mut stream)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct PacketContainer {
