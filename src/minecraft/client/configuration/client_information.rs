@@ -33,40 +33,17 @@ pub struct ClientInformationPacket {
 
 impl ClientInformationPacket {
     #[inline]
-    pub fn new(
-        locale: &str,
-        view_distance: i8,
-        chat_mode: ClientChatMode,
-        chat_colors: bool,
-        skin_parts: u8,
-        main_hand: ClientMainHand,
-        text_filtering: bool,
-        allow_server_listings: bool,
-    ) -> Self {
-        Self {
-            locale: locale.into(),
-            view_distance: view_distance.into(),
-            chat_mode: (chat_mode as i32).into(),
-            chat_colors: chat_colors.into(),
-            skin_parts: skin_parts.into(),
-            main_hand: (main_hand as i32).into(),
-            text_filtering: text_filtering.into(),
-            allow_server_listings: allow_server_listings.into(),
-        }
-    }
-
-    #[inline]
     pub fn default() -> Self {
-        Self::new(
-            "en_GB",
-            8,
-            ClientChatMode::Enabled,
-            true,
-            0x7F,
-            ClientMainHand::Right,
-            false,
-            true,
-        )
+        Self {
+            locale: "en_GB".into(),
+            view_distance: 8.into(),
+            chat_mode: (ClientChatMode::Enabled as i32).into(),
+            chat_colors: true.into(),
+            skin_parts: 0x7F.into(),
+            main_hand: (ClientMainHand::Right as i32).into(),
+            text_filtering: false.into(),
+            allow_server_listings: true.into(),
+        }
     }
 }
 

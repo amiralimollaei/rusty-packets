@@ -256,16 +256,16 @@ impl Client {
         // }.send(stream);
 
         // send a default client information packet, otherwise we might not be able to join
-        client::configuration::ClientInformationPacket::new(
-            self.get_locale(),
-            self.get_view_distance(),
-            client::configuration::ClientChatMode::Enabled,
-            true,
-            0x7F,
-            self.get_main_hand(),
-            false,
-            self.allows_server_listings(),
-        )
+        client::configuration::ClientInformationPacket {
+            locale: self.get_locale().into(),
+            view_distance: self.get_view_distance().into(),
+            chat_mode: (client::configuration::ClientChatMode::Enabled as i32).into(),
+            chat_colors: true.into(),
+            skin_parts: 0x7F.into(),
+            main_hand: (self.get_main_hand() as i32).into(),
+            text_filtering: false.into(),
+            allow_server_listings: self.allows_server_listings().into(),
+        }
         .send(stream);
 
         // configuration phase loop
