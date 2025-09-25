@@ -452,20 +452,18 @@ impl Client {
                 get_logger().info(format!("SpawnEntityPacket: {:?}", packet));
             }
 
-            // TODO: don't completely die just because one packet is not supported
             id => {
+                // avoid spamming the logger with the same message
                 unsafe {
                     let ids = &raw mut NOT_IMPLEMENTED_PACKET_IDS as *mut Vec<i32>;
                     if !(*ids).contains(&id) {
                         get_logger().warn(format!(
-                            "Play stage packet with ID={:#04x} is not implemented.",
+                            "Clientbound Play packet with ID={:#04x} is not implemented, skipping.",
                             id
                         ));
                         (*ids).push(id);
                     }
                 }
-
-                //panic!()
             }
         }
     }
@@ -476,7 +474,7 @@ impl Client {
         let mut bundle_packets: Vec<PacketContainer> = Vec::new();
         let mut do_bundle: bool = false;
 
-        // playe phase loop
+        // play phase loop
         loop {
             // read one packet from the stream
             let raw_packet = PacketContainer::recv(stream);
@@ -529,14 +527,12 @@ impl Client {
                     }
                 }
             }
-
-            // don't spam too much cpu cycles
-            // thread::sleep(Duration::from_millis(20)); <--- this line was causing a very strange bug
         }
     }
 
     pub fn connect(&mut self) {
         let mut stream = connect(&self.hostname, self.port);
+        // TODO: Dynamic handling of Phases (they're not always in the following order)
         self.handshake(&mut stream);
         self.login(&mut stream);
         self.configure(&mut stream);
