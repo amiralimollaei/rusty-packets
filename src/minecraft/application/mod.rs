@@ -283,9 +283,9 @@ impl Client {
                     }
                     .send(stream);
                 }
-                server::configuration::PluginMessagesPacket::ID => {
+                server::configuration::ClientboundPluginMessagePacket::ID => {
                     let packet =
-                        server::configuration::PluginMessagesPacket::from_packet(raw_packet);
+                        server::configuration::ClientboundPluginMessagePacket::from_packet(raw_packet);
                     get_logger().warn(format!("Ignoring login plugin message: {:?}", packet))
                 }
                 server::configuration::DisconnectPacket::ID => {
@@ -300,7 +300,7 @@ impl Client {
                         server::configuration::ConfigurationFinishPacket::from_packet(raw_packet);
                     get_logger().info(format!("Configuration Finished!: {:?}", packet));
                     // send finish configuration acknowledged packet
-                    client::configuration::ConfigurationAcknowledgedPacket.send(stream);
+                    client::configuration::AcknowledgeFinishConfigurationPacket.send(stream);
                     // set state to play
                     self.state = ConnectionState::Play;
                     break;
@@ -309,7 +309,7 @@ impl Client {
                 server::configuration::KeepAlivePacket::ID => {
                     let keepalive = server::configuration::KeepAlivePacket::from_packet(raw_packet);
                     // respond to keepalive packet
-                    client::configuration::KeepAlivePacket {
+                    client::configuration::ServerboundKeepAlivePacket {
                         keepalive_id: keepalive.keepalive_id,
                     }
                     .send(stream);
@@ -365,7 +365,7 @@ impl Client {
                         server::configuration::KnownServerPacksPacket::from_packet(raw_packet);
                     get_logger().info(format!("Known Packs: {:?}", packet));
                     client::configuration::KnownClientPacksPacket {
-                        packs: vec![client::configuration::KnownClientPack {
+                        packs: vec![client::configuration::ServerboundKnownPacksPacket {
                             namespace: "minecraft".into(),
                             id: "core".into(),
                             version: "1.21.1".into(),
@@ -431,7 +431,7 @@ impl Client {
                 self.execute_synchronize_player_position_packet(&packet);
                 get_logger().info(format!("Teleported by server: {:?}", self.location));
                 // send teleport confirmation packet
-                server::play::ConfirmTeleportationPacket {
+                client::play::ConfirmTeleportationPacket {
                     teleport_id: packet.teleport_id.clone(),
                 }
                 .send(stream);

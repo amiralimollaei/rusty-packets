@@ -1638,7 +1638,7 @@ impl<T: MinecraftType> PacketWritable for Array<T> {
 
 impl<T: MinecraftType> MinecraftType for Array<T> {}
 
-// a very common type of arrays
+// a very common type of arrays, this is equalent to a size prefixed Array<u8>, but
 // it is implemented in a way that is more optimized and more convenient
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 
@@ -2311,3 +2311,352 @@ impl PacketReadable for NBTValue {
 impl MinecraftType for NBTValue {}
 
 // ------------- NBT Implentation end -------------
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum Or<A: MinecraftType, B: MinecraftType> {
+    A(A),
+    B(B),
+}
+
+impl<A: Debug + MinecraftType, B: Debug + MinecraftType> Debug for Or<A, B> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::A(v) => f.write_str(&format!("A({:?})", v)),
+            Self::B(v) => f.write_str(&format!("B({:?})", v)),
+        }
+    }
+}
+
+impl<A: MinecraftType, B: MinecraftType> Or<A, B> {
+    pub fn from_a(value: A) -> Self {
+        Or::A(value)
+    }
+
+    pub fn from_b(value: B) -> Self {
+        Or::B(value)
+    }
+
+    pub fn into_a(self) -> Option<A> {
+        match self {
+            Or::A(a) => Some(a),
+            Or::B(_) => None,
+        }
+    }
+
+    pub fn into_b(self) -> Option<B> {
+        match self {
+            Or::A(_) => None,
+            Or::B(b) => Some(b),
+        }
+    }
+}
+
+impl<A: MinecraftType, B: MinecraftType> From<A> for Or<A, B> {
+    fn from(value: A) -> Self {
+        Or::A(value)
+    }
+}
+
+impl<A: MinecraftType, B: MinecraftType> PacketReadable for Or<A, B> {
+    fn read(stream: &mut impl Read) -> Self {
+        let is_a = Boolean::read(stream).get_value();
+        if is_a {
+            Self::A(A::read(stream))
+        } else {
+            Self::B(B::read(stream))
+        }
+    }
+}
+
+impl<A: MinecraftType, B: MinecraftType> PacketWritable for Or<A, B> {
+    fn write(&self, stream: &mut impl Write) {
+        match self {
+            Or::A(v) => {
+                Boolean::new(true).write(stream);
+                v.write(stream);
+            }
+            Or::B(v) => {
+                Boolean::new(false).write(stream);
+                v.write(stream);
+            }
+        }
+    }
+}
+
+impl<A: MinecraftType, B: MinecraftType> MinecraftType for Or<A, B> {}
+
+impl<A: MinecraftType, B: MinecraftType> Into<(Option<A>, Option<B>)> for Or<A, B> {
+    fn into(self) -> (Option<A>, Option<B>) {
+        match self {
+            Or::A(a) => (Some(a), None),
+            Or::B(b) => (None, Some(b)),
+        }
+    }
+}
+
+// A fixed-size byte array.
+// Unlike `ByteArray`, this does not have a `VarInt` length prefix,
+// as its size `N` is known at compile time.
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct FixedSizeByteArray<const N: usize> {
+    values: [u8; N],
+}
+
+impl<const N: usize> Debug for FixedSizeByteArray<N> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("FixedSizeByteArray")
+            .field(&self.values)
+            .finish()
+    }
+}
+
+impl<const N: usize> From<[u8; N]> for FixedSizeByteArray<N> {
+    fn from(values: [u8; N]) -> Self {
+        Self { values }
+    }
+}
+
+impl<const N: usize> Into<[u8; N]> for FixedSizeByteArray<N> {
+    fn into(self) -> [u8; N] {
+        self.values
+    }
+}
+
+impl<const N: usize> FixedSizeByteArray<N> {
+    pub fn new(values: [u8; N]) -> Self {
+        Self { values }
+    }
+
+    pub fn len(&self) -> usize {
+        N
+    }
+}
+
+impl<const N: usize> Deref for FixedSizeByteArray<N> {
+    type Target = [u8; N];
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl<const N: usize> PacketReadable for FixedSizeByteArray<N> {
+    fn read(stream: &mut impl Read) -> Self {
+        let mut values = [0u8; N];
+        stream.read_exact(&mut values).expect(READ_ERROR);
+        Self { values }
+    }
+}
+
+impl<const N: usize> PacketWritable for FixedSizeByteArray<N> {
+    fn write(&self, stream: &mut impl Write) {
+        stream.write_all(&self.values).expect(WRITE_ERROR);
+    }
+}
+
+impl<const N: usize> MinecraftType for FixedSizeByteArray<N> {}
+
+
+// A fixed-size bit set.
+// The size `BYTES` is the number of bytes.
+// The data is stored as a byte array of that size.
+#[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct FixedSizeBitSet<const N: usize> {
+    values: [u8; N],
+}
+
+impl<const BYTES: usize> Debug for FixedSizeBitSet<BYTES> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FixedSizeBitSet")
+            .field("values", &self.values)
+            .finish()
+    }
+}
+
+impl<const N: usize> From<[u8; N]> for FixedSizeBitSet<N> {
+    fn from(values: [u8; N]) -> Self {
+        Self { values }
+    }
+}
+
+impl<const N: usize> Into<[u8; N]> for FixedSizeBitSet<N> {
+    fn into(self) -> [u8; N] {
+        self.values
+    }
+}
+
+impl<const N: usize> FixedSizeBitSet<N> {
+    pub fn new(values: [u8; N]) -> Self {
+        Self { values }
+    }
+
+    /// Gets the bit at the given index.
+    /// Panics if the index is out of bounds.
+    pub fn get_bit(&self, index: usize) -> bool {
+        if index >= N {
+            panic!("Bit index out of bounds: the len is {} but the index is {}", N, index);
+        }
+        let byte_index = index / 8;
+        let bit_in_byte_index = 7 - (index % 8); // MSB-first
+        (self.values[byte_index] >> bit_in_byte_index) & 1 != 0
+    }
+
+    /// Sets the bit at the given index to the given value.
+    /// Panics if the index is out of bounds.
+    pub fn set_bit(&mut self, index: usize, value: bool) {
+        if index >= N {
+            panic!("Bit index out of bounds: the len is {} but the index is {}", N, index);
+        }
+        let byte_index = index / 8;
+        let bit_in_byte_index = 7 - (index % 8); // MSB-first
+        if value {
+            self.values[byte_index] |= 1 << bit_in_byte_index;
+        } else {
+            self.values[byte_index] &= !(1 << bit_in_byte_index);
+        }
+    }
+
+    pub fn len_bits(&self) -> usize {
+        N * 8
+    }
+
+    pub fn len_bytes(&self) -> usize {
+        N
+    }
+}
+
+impl<const N: usize> Deref for FixedSizeBitSet<N> {
+    type Target = [u8; N];
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl<const N: usize> PacketReadable for FixedSizeBitSet<N> {
+    fn read(stream: &mut impl Read) -> Self {
+        let mut values = [0u8; N];
+        stream.read_exact(&mut values).expect(READ_ERROR);
+        Self { values }
+    }
+}
+
+impl<const N: usize> PacketWritable for FixedSizeBitSet<N> {
+    fn write(&self, stream: &mut impl Write) {
+        stream.write_all(&self.values).expect(WRITE_ERROR);
+    }
+}
+
+impl<const N: usize> MinecraftType for FixedSizeBitSet<N> {}
+
+// A length-prefixed bit set.
+// The length (number of bits) is prefixed as a VarInt.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct BitSet {
+    values: Vec<u8>,
+    bit_count: usize,
+}
+
+impl BitSet {
+    pub fn new(values: Vec<u8>, bit_count: usize) -> Self {
+        let byte_count = (bit_count + 7) / 8;
+        assert_eq!(values.len(), byte_count, "Invalid number of bytes for the given bit count");
+        Self { values, bit_count }
+    }
+
+    /// Gets the bit at the given index.
+    /// Panics if the index is out of bounds.
+    pub fn get_bit(&self, index: usize) -> bool {
+        if index >= self.bit_count {
+            panic!("Bit index out of bounds: the len is {} but the index is {}", self.bit_count, index);
+        }
+        let byte_index = index / 8;
+        let bit_in_byte_index = 7 - (index % 8); // MSB-first
+        (self.values[byte_index] >> bit_in_byte_index) & 1 != 0
+    }
+
+    /// Sets the bit at the given index to the given value.
+    /// Panics if the index is out of bounds.
+    pub fn set_bit(&mut self, index: usize, value: bool) {
+        if index >= self.bit_count {
+            panic!("Bit index out of bounds: the len is {} but the index is {}", self.bit_count, index);
+        }
+        let byte_index = index / 8;
+        let bit_in_byte_index = 7 - (index % 8); // MSB-first
+        if value {
+            self.values[byte_index] |= 1 << bit_in_byte_index;
+        } else {
+            self.values[byte_index] &= !(1 << bit_in_byte_index);
+        }
+    }
+
+    /// Appends a bit to the end of the bit set.
+    pub fn push_bit(&mut self, value: bool) {
+        let new_byte_count = (self.bit_count + 1 + 7) / 8;
+        if new_byte_count > self.values.len() {
+            self.values.push(0);
+        }
+        self.bit_count += 1;
+        self.set_bit(self.bit_count - 1, value);
+    }
+
+    /// Removes the last bit from the bit set and returns it.
+    /// Returns `None` if the bit set is empty.
+    pub fn pop_bit(&mut self) -> Option<bool> {
+        if self.bit_count == 0 {
+            return None;
+        }
+        let value = self.get_bit(self.bit_count - 1);
+        self.bit_count -= 1;
+        let new_byte_count = (self.bit_count + 7) / 8;
+        self.values.truncate(new_byte_count);
+        Some(value)
+    }
+
+    /// Removes and returns the bit at `index`.
+    /// Panics if `index` is out of bounds.
+    pub fn remove_bit(&mut self, index: usize) -> bool {
+        let value = self.get_bit(index); // This also panics if out of bounds
+        for i in index..self.bit_count - 1 {
+            let next_bit = self.get_bit(i + 1);
+            self.set_bit(i, next_bit);
+        }
+        self.pop_bit(); // Remove the now-duplicate last bit
+        value
+    }
+
+    pub fn len_bits(&self) -> usize {
+        self.bit_count
+    }
+
+    pub fn len_bytes(&self) -> usize {
+        self.values.len()
+    }
+}
+
+impl Deref for BitSet {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl PacketReadable for BitSet {
+    fn read(stream: &mut impl Read) -> Self {
+        let bit_count = VarInt::read(stream).get_value() as usize;
+        let byte_count = (bit_count + 7) / 8;
+        let mut values = vec![0u8; byte_count];
+        stream.read_exact(&mut values).expect(READ_ERROR);
+        Self { values, bit_count }
+    }
+}
+
+impl PacketWritable for BitSet {
+    fn write(&self, stream: &mut impl Write) {
+        VarInt::new(self.bit_count as i32).write(stream);
+        stream.write_all(&self.values).expect(WRITE_ERROR);
+    }
+}
+
+impl MinecraftType for BitSet {}

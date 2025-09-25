@@ -149,3 +149,14 @@ impl Packet for ResponsePacket {
     const ID: i32 = 0x00;
     const PHASE: ConnectionState = ConnectionState::Status;
 }
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct PongPacket {
+    pub timestamp: types::Long,
+}
+
+impl Packet for PongPacket {
+    const ID: i32 = 0x01;
+    const PHASE: ConnectionState = ConnectionState::Status;
+}
