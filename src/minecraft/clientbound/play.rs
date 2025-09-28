@@ -67,6 +67,100 @@ impl Packet for EntityAnimationPacket {
 
 
 #[derive(MinecraftType, Debug, Clone)]
+pub struct AwardStatistic {
+    pub category_id: types::VarInt,
+    pub statistic_id: types::VarInt,
+    pub value: types::VarInt,
+}
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct AwardStatisticsPacket {
+    pub statistics: types::Array<AwardStatistic>,
+}
+
+impl Packet for AwardStatisticsPacket {
+    const ID: i32 = 0x04;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct AcknowledgeBlockChangePacket {
+    pub sequence_id: types::VarInt,
+}
+
+impl Packet for AcknowledgeBlockChangePacket {
+    const ID: i32 = 0x05;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct SetBlockDestroyStagePacket {
+    pub entity_id: types::VarInt,
+    pub location: types::Position,
+    pub destroy_stage: types::Byte,
+}
+
+impl Packet for SetBlockDestroyStagePacket {
+    const ID: i32 = 0x06;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct BlockEntityDataPacket {
+    pub location: types::Position,
+    pub type_: types::VarInt,
+    pub nbt_data: types::NBTValue,
+}
+
+impl Packet for BlockEntityDataPacket {
+    const ID: i32 = 0x07;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct BlockActionPacket {
+    pub location: types::Position,
+    pub action_id: types::UnsignedByte,
+    pub action_parameter: types::UnsignedByte,
+    pub block_type: types::VarInt,
+}
+
+impl Packet for BlockActionPacket {
+    const ID: i32 = 0x08;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct BlockUpdatePacket {
+    pub location: types::Position,
+    pub block_id: types::VarInt,
+}
+
+impl Packet for BlockUpdatePacket {
+    const ID: i32 = 0x09;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct BossBarPacket {
+    pub uuid: types::UUID,
+    pub action: types::VarInt,
+    pub action_data: types::UnsizedByteArray // TODO: this data should be parsed based on the value of action
+}
+
+impl Packet for BossBarPacket {
+    const ID: i32 = 0x0A;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
 pub struct ChangeDifficultyPacket {
     pub difficulty: types::UnsignedByte,  // 0: peaceful, 1: easy, 2: normal, 3: hard.
     pub is_locked: types::Boolean         
@@ -74,6 +168,233 @@ pub struct ChangeDifficultyPacket {
 
 impl Packet for ChangeDifficultyPacket {
     const ID: i32 = 0x0B;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct ChunkBatchFinishedPacket {
+    pub batch_size: types::VarInt,
+}
+
+impl Packet for ChunkBatchFinishedPacket {
+    const ID: i32 = 0x0C;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct ChunkBatchStartPacket;
+
+impl Packet for ChunkBatchStartPacket {
+    const ID: i32 = 0x0D;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct ChunkBiomeData {
+    pub chunk_z: types::Int,
+    pub chunk_x: types::Int,
+    pub chunk_data: types::ByteArray,
+}
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct ChunkBiomesPacket {
+    pub chunks: types::Array<ChunkBiomeData>,
+}
+
+impl Packet for ChunkBiomesPacket {
+    const ID: i32 = 0x0E;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct ClearTitlesPacket {
+    pub reset: types::Boolean,
+}
+
+impl Packet for ClearTitlesPacket {
+    const ID: i32 = 0x0F;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct CommandSuggestionMatch {
+    pub match_: types::String,
+    pub tooltip: types::Optional<types::NBTValue>, // optional text component
+}
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct CommandSuggestionsResponsePacket {
+    pub id: types::VarInt,
+    pub start: types::VarInt,
+    pub length: types::VarInt,
+    pub matches: types::Array<CommandSuggestionMatch>,
+}
+
+impl Packet for CommandSuggestionsResponsePacket {
+    const ID: i32 = 0x10;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+/*
+#[derive(MinecraftType, Debug, Clone)]
+pub struct CommandsPacket {
+    pub reset: types::Array<GraphNode>, // TODO implelemnt GraphNode
+    pub root_index: types::VarInt,
+}
+
+impl Packet for CommandsPacket {
+    const ID: i32 = 0x11;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+*/
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct CloseContainerPacket {
+    pub window_id: types::UnsignedByte,
+}
+
+impl Packet for CloseContainerPacket {
+    const ID: i32 = 0x12;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+/*
+#[derive(MinecraftType, Debug, Clone)]
+pub struct SetContainerContentPacket {
+    pub window_id: types::UnsignedByte,
+    pub state_id: types::VarInt,
+    pub slots: types::Array<Slot> // TODO implement Slot
+
+}
+
+impl Packet for SetContainerContentPacket {
+    const ID: i32 = 0x13;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+*/
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct SetContainerPropertyPacket {
+    pub window_id: types::VarInt,
+    pub property: types::Short, // The meaning of the Property field depends on the type of the window.
+    pub value: types::Short,
+}
+
+impl Packet for SetContainerPropertyPacket {
+    const ID: i32 = 0x14;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+/*
+#[derive(MinecraftType, Debug, Clone)]
+pub struct SetContainerSlotPacket {
+    pub window_id: types::UnsignedByte,
+    pub state_id: types::VarInt,
+    pub slot: types::Short,
+    pub slot_data: Slot // TODO implement Slot
+
+}
+
+impl Packet for SetContainerSlotPacket {
+    const ID: i32 = 0x15;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+*/
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct CookieRequestPacket {
+    pub key: types::Identifier,
+}
+
+impl Packet for CookieRequestPacket {
+    const ID: i32 = 0x16;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct SetCooldownPacket {
+    pub item_id: types::VarInt,
+    pub cooldown_ticks: types::VarInt,
+}
+
+impl Packet for SetCooldownPacket {
+    const ID: i32 = 0x17;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct ChatSuggestionsPacket {
+    pub action: types::VarInt,   // 0: Add, 1: Remove, 2: Set
+    pub entries: types::Array<types::String>,
+}
+
+impl Packet for ChatSuggestionsPacket {
+    const ID: i32 = 0x18;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct ClientboundPluginMessagePacket {
+    pub channel: types::Identifier,
+    pub data: types::UnsizedByteArray,
+}
+
+impl Packet for ClientboundPluginMessagePacket {
+    const ID: i32 = 0x19;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct DoublePositon {
+    pub x: types::Double,
+    pub y: types::Double,
+    pub z: types::Double,
+}
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct DamageEventPacket {
+    pub entity_id: types::VarInt,
+    pub source_type_id: types::VarInt,
+    pub source_cause_id: types::VarInt,
+    pub source_direct_id: types::VarInt,
+    pub position: types::Optional<DoublePositon>,
+}
+
+impl Packet for DamageEventPacket {
+    const ID: i32 = 0x1A;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct DebugSamplePacket {
+    pub samples: types::Array<types::Long>, // Array of type-dependent samples.
+}
+
+impl Packet for DebugSamplePacket {
+    const ID: i32 = 0x1B;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct DeleteMessagePacket {
+    pub message_id: types::VarInt,
+    pub signature: types::FixedSizeByteArray<256>,
+}
+
+impl Packet for DeleteMessagePacket {
+    const ID: i32 = 0x1C;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
