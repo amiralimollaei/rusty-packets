@@ -1,10 +1,10 @@
-use crate::minecraft::packet::PacketSerde;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
+    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
     types,
 };
+
 
 #[derive(Clone, Debug)]
 pub enum HandshakeRequest {
