@@ -1,12 +1,12 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
     types,
 };
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct DisconnectPacket {
     pub reason: types::String,
 }
@@ -17,7 +17,7 @@ impl Packet for DisconnectPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct EncryptionRequestPacket {
     pub server_id: types::String,               // max 20 characters
     pub public_key: types::ByteArray,           // the server's public key in bytes
@@ -31,14 +31,14 @@ impl Packet for EncryptionRequestPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct LoginProperty {
     pub name: types::String,
     pub value: types::String,
     pub signature: types::Optional<types::String>,
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct LoginSuccessPacket {
     pub uuid: types::UUID,
     pub username: types::String,
@@ -51,7 +51,7 @@ impl Packet for LoginSuccessPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SetCompressionPacket {
     pub threshold: types::VarInt,
 }
@@ -62,7 +62,7 @@ impl Packet for SetCompressionPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct PluginRequestPacket {
     pub message_id: types::VarInt,
     pub channel: types::Identifier,
@@ -75,7 +75,7 @@ impl Packet for PluginRequestPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct CookieRequest {
     pub key: types::Identifier,
 }

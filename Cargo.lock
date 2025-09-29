@@ -67,21 +67,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
 
 [[package]]
-name = "minecraft_type_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
+]
+
+[[package]]
+name = "packet_serde_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -138,7 +138,7 @@ dependencies = [
  "base64",
  "cesu8",
  "flate2",
- "minecraft_type_derive",
+ "packet_serde_derive",
  "regex",
  "serde",
  "serde_derive",

@@ -1,5 +1,5 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
@@ -134,7 +134,7 @@ impl StatusResponse {
     }
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ResponsePacket {
     pub field_status: types::String,
 }
@@ -151,7 +151,7 @@ impl Packet for ResponsePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct PongPacket {
     pub timestamp: types::Long,
 }

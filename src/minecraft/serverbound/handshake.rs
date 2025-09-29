@@ -1,5 +1,5 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
@@ -13,7 +13,7 @@ pub enum HandshakeRequest {
     TRANSFER = 3,
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct HandshakeStartPacket {
     protocol: types::VarInt,
     hostname: types::String,

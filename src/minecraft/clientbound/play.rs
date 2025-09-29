@@ -1,5 +1,5 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
@@ -7,7 +7,7 @@ use crate::minecraft::{
 };
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct BundleDelimiterPacket;
 
 impl Packet for BundleDelimiterPacket {
@@ -16,7 +16,7 @@ impl Packet for BundleDelimiterPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SpawnEntityPacket {
     pub entity_id: types::VarInt,      // A unique integer ID mostly used in the protocol to identify the entity.
     pub entity_uuid: types::UUID,      // A unique identifier that is mostly used in persistence and places where the uniqueness matters more.
@@ -35,7 +35,7 @@ impl Packet for SpawnEntityPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SpawnExperienceOrbPacket {
     pub entity_id: types::VarInt,      // A unique integer ID mostly used in the protocol to identify the entity.
     pub position: types::DoubleVec3,   // entity x y z position encoded as Double
@@ -48,7 +48,7 @@ impl Packet for SpawnExperienceOrbPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct EntityAnimationPacket {
     pub entity_id: types::VarInt,   // A unique integer ID mostly used in the protocol to identify the entity.
     pub animation: types::UnsignedByte,    // 0->Swing main arm, 1->UNDEFINED, 2->Leave bed, 3->Swing offhand, 4->Critical effect, 5->Magic critical effect
@@ -60,14 +60,14 @@ impl Packet for EntityAnimationPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct AwardStatistic {
     pub category_id: types::VarInt,
     pub statistic_id: types::VarInt,
     pub value: types::VarInt,
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct AwardStatisticsPacket {
     pub statistics: types::Array<AwardStatistic>,
 }
@@ -78,7 +78,7 @@ impl Packet for AwardStatisticsPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct AcknowledgeBlockChangePacket {
     pub sequence_id: types::VarInt,
 }
@@ -89,7 +89,7 @@ impl Packet for AcknowledgeBlockChangePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SetBlockDestroyStagePacket {
     pub entity_id: types::VarInt,
     pub location: types::Position,
@@ -102,7 +102,7 @@ impl Packet for SetBlockDestroyStagePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct BlockEntityDataPacket {
     pub location: types::Position,
     pub type_: types::VarInt,
@@ -115,7 +115,7 @@ impl Packet for BlockEntityDataPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct BlockActionPacket {
     pub location: types::Position,
     pub action_id: types::UnsignedByte,
@@ -129,7 +129,7 @@ impl Packet for BlockActionPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct BlockUpdatePacket {
     pub location: types::Position,
     pub block_id: types::VarInt,
@@ -141,7 +141,7 @@ impl Packet for BlockUpdatePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct BossBarPacket {
     pub uuid: types::UUID,
     pub action: types::VarInt,
@@ -154,7 +154,7 @@ impl Packet for BossBarPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ChangeDifficultyPacket {
     pub difficulty: types::UnsignedByte,  // 0: peaceful, 1: easy, 2: normal, 3: hard.
     pub is_locked: types::Boolean         
@@ -166,7 +166,7 @@ impl Packet for ChangeDifficultyPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ChunkBatchFinishedPacket {
     pub batch_size: types::VarInt,
 }
@@ -177,7 +177,7 @@ impl Packet for ChunkBatchFinishedPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ChunkBatchStartPacket;
 
 impl Packet for ChunkBatchStartPacket {
@@ -186,14 +186,14 @@ impl Packet for ChunkBatchStartPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ChunkBiomeData {
     pub chunk_z: types::Int,
     pub chunk_x: types::Int,
     pub chunk_data: types::ByteArray,
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ChunkBiomesPacket {
     pub chunks: types::Array<ChunkBiomeData>,
 }
@@ -204,7 +204,7 @@ impl Packet for ChunkBiomesPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ClearTitlesPacket {
     pub reset: types::Boolean,
 }
@@ -215,13 +215,13 @@ impl Packet for ClearTitlesPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct CommandSuggestionMatch {
     pub match_: types::String,
     pub tooltip: types::Optional<types::NBTValue>, // optional text component
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct CommandSuggestionsResponsePacket {
     pub id: types::VarInt,
     pub start: types::VarInt,
@@ -235,7 +235,7 @@ impl Packet for CommandSuggestionsResponsePacket {
 }
 
 /*
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct CommandsPacket {
     pub reset: types::Array<GraphNode>, // TODO implelemnt GraphNode
     pub root_index: types::VarInt,
@@ -247,7 +247,7 @@ impl Packet for CommandsPacket {
 }
 */
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct CloseContainerPacket {
     pub window_id: types::UnsignedByte,
 }
@@ -258,7 +258,7 @@ impl Packet for CloseContainerPacket {
 }
 
 /*
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SetContainerContentPacket {
     pub window_id: types::UnsignedByte,
     pub state_id: types::VarInt,
@@ -273,7 +273,7 @@ impl Packet for SetContainerContentPacket {
 */
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SetContainerPropertyPacket {
     pub window_id: types::VarInt,
     pub property: types::Short, // The meaning of the Property field depends on the type of the window.
@@ -286,7 +286,7 @@ impl Packet for SetContainerPropertyPacket {
 }
 
 /*
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SetContainerSlotPacket {
     pub window_id: types::UnsignedByte,
     pub state_id: types::VarInt,
@@ -301,7 +301,7 @@ impl Packet for SetContainerSlotPacket {
 }
 */
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct CookieRequestPacket {
     pub key: types::Identifier,
 }
@@ -312,7 +312,7 @@ impl Packet for CookieRequestPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SetCooldownPacket {
     pub item_id: types::VarInt,
     pub cooldown_ticks: types::VarInt,
@@ -324,7 +324,7 @@ impl Packet for SetCooldownPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ChatSuggestionsPacket {
     pub action: types::VarInt,   // 0: Add, 1: Remove, 2: Set
     pub entries: types::Array<types::String>,
@@ -336,7 +336,7 @@ impl Packet for ChatSuggestionsPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ClientboundPluginMessagePacket {
     pub channel: types::Identifier,
     pub data: types::UnsizedByteArray,
@@ -348,7 +348,7 @@ impl Packet for ClientboundPluginMessagePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct DamageEventPacket {
     pub entity_id: types::VarInt,
     pub source_type_id: types::VarInt,
@@ -363,7 +363,7 @@ impl Packet for DamageEventPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct DebugSamplePacket {
     pub samples: types::Array<types::Long>, // Array of type-dependent samples.
 }
@@ -374,7 +374,7 @@ impl Packet for DebugSamplePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct DeleteMessagePacket {
     pub message_id: types::VarInt,
     pub signature: types::FixedSizeByteArray<256>,
@@ -386,7 +386,7 @@ impl Packet for DeleteMessagePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct DisconnectPacket {
     pub reason: types::NBTValue,   // an NBT Tag containing a single string
 }
@@ -397,7 +397,7 @@ impl Packet for DisconnectPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct KeepAlivePacket {
     pub keepalive_id: types::Long,
 }
@@ -408,7 +408,7 @@ impl Packet for KeepAlivePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct LoginPacket {
     pub entity_id: types::Int,                                        // The player's Entity ID (EID).
     pub is_harcore: types::Boolean,
@@ -438,7 +438,7 @@ impl Packet for LoginPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct PlayerAbilitiesPacket {
     pub flags: types::UnsignedByte,             // 0x01: Invulnerable, 0x02: Flying, 0x04: Allow Flying, 0x08: Creative Mode (Instant Break)	.
     pub flying_speed: types::Float,             // 0.05 by default.
@@ -451,7 +451,7 @@ impl Packet for PlayerAbilitiesPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SyncPlayerPositionPacket {
     pub location: types::Location,            // contains the location of a player
     pub flags: types::Byte,            // When the value of the this byte masked is zero the field is absolute, otherwise relative.
@@ -464,7 +464,7 @@ impl Packet for SyncPlayerPositionPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct SetHeldItemPacket {
     pub slot: types::Byte,
 }

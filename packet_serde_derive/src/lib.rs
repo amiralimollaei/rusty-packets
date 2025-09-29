@@ -3,25 +3,25 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{self, parse_macro_input, Data, Fields, Ident, Attribute};
 
-#[proc_macro_derive(MinecraftType, attributes(discriminant_type))]
-pub fn minecraft_type_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(PacketSerde, attributes(discriminant_type))]
+pub fn packet_serde_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as syn::DeriveInput);
     let name = &ast.ident;
-    let r#gen = impl_minecraft_type(&ast, name);
+    let r#gen = impl_packet_serde(&ast, name);
     TokenStream::from(r#gen)
 }
 
-fn impl_minecraft_type(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::TokenStream {
+fn impl_packet_serde(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::TokenStream {
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     
-    let mut minecraft_type_where_clause = where_clause.cloned().unwrap_or_else(|| syn::parse_quote! { where });
+    let mut packet_serde_where_clause = where_clause.cloned().unwrap_or_else(|| syn::parse_quote! { where });
     let mut writable_where_clause = where_clause.cloned().unwrap_or_else(|| syn::parse_quote! { where });
     let mut readable_where_clause = where_clause.cloned().unwrap_or_else(|| syn::parse_quote! { where });
     
     for param in generics.type_params() {
         let type_ident = &param.ident;
-        minecraft_type_where_clause.predicates.push(syn::parse_quote! { #type_ident: MinecraftType });
+        packet_serde_where_clause.predicates.push(syn::parse_quote! { #type_ident: PacketSerde });
         writable_where_clause.predicates.push(syn::parse_quote! { #type_ident: PacketWritable });
         readable_where_clause.predicates.push(syn::parse_quote! { #type_ident: PacketReadable });
     }
@@ -29,11 +29,11 @@ fn impl_minecraft_type(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::Tok
     let (write_impl, read_impl) = match &ast.data {
         Data::Struct(s) => generate_struct_impl(s),
         Data::Enum(e) => generate_enum_impl(e, &ast.attrs),
-        _ => panic!("MinecraftType can only be derived on structs and enums."),
+        _ => panic!("PacketSerde can only be derived on structs and enums."),
     };
 
     quote! {
-        impl #impl_generics MinecraftType for #name #ty_generics #minecraft_type_where_clause {}
+        impl #impl_generics PacketSerde for #name #ty_generics #packet_serde_where_clause {}
         
         impl #impl_generics PacketWritable for #name #ty_generics #writable_where_clause {
             fn write(&self, stream: &mut impl std::io::Write) {

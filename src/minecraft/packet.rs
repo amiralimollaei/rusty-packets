@@ -1,5 +1,5 @@
 // packet implementation based on https://minecraft.wiki/w/Java_Edition_protocol/Packets?oldid=2789623
-use crate::minecraft::types::{self, MinecraftType};
+use crate::minecraft::types;
 use crate::utils::ansi::string::AnsiString;
 use crate::utils::logging::{get_log_level, get_logger};
 
@@ -27,6 +27,8 @@ pub trait PacketReadable {
         Self::read(&mut stream)
     }
 }
+
+pub trait PacketSerde: PacketReadable + PacketWritable {}
 
 #[derive(Clone, Debug)]
 pub struct PacketContainer {
@@ -285,14 +287,14 @@ impl<R: Write + Seek> PacketWriter<R> {
     pub fn finish(&mut self) {
         // reserved for forward compatibility
     }
-    pub fn write<T: MinecraftType, U: Into<T>>(&mut self, value: U) {
+    pub fn write<T: PacketSerde, U: Into<T>>(&mut self, value: U) {
         let value_raw: T = value.into();
         value_raw.write(&mut self.stream);
     }
-    pub fn write_raw_consume<T: MinecraftType>(&mut self, value: T) {
+    pub fn write_raw_consume<T: PacketSerde>(&mut self, value: T) {
         value.write(&mut self.stream);
     }
-    pub fn write_raw<T: MinecraftType>(&mut self, value: &T) {
+    pub fn write_raw<T: PacketSerde>(&mut self, value: &T) {
         value.write(&mut self.stream);
     }
 }
@@ -312,7 +314,7 @@ impl<S: Read + Seek> PacketReader<S> {
         // Reserved for forward compatibility
     }
 
-    pub fn read_raw<T: MinecraftType>(&mut self) -> T {
+    pub fn read_raw<T: PacketSerde>(&mut self) -> T {
         T::read(&mut self.stream)
     }
 }
@@ -355,9 +357,9 @@ pub trait PacketRecv: PacketIn<Cursor<Vec<u8>>> {
     }
 }
 
-impl<U: Packet + MinecraftType> PacketRecv for U {}
+impl<U: Packet + PacketSerde> PacketRecv for U {}
 
-impl<T: Read + Seek, U: Packet + MinecraftType> PacketIn<T> for U {
+impl<T: Read + Seek, U: Packet + PacketSerde> PacketIn<T> for U {
     fn read(reader: &mut PacketReader<T>) -> Self {
         reader.read_raw::<Self>()
     }
@@ -377,9 +379,9 @@ pub trait PacketSend: for<'a> PacketOut<&'a mut Cursor<Vec<u8>>> {
     }
 }
 
-impl<U: Packet + MinecraftType> PacketSend for U {}
+impl<U: Packet + PacketSerde> PacketSend for U {}
 
-impl<T: Write + Seek, U: Packet + MinecraftType> PacketOut<T> for U {
+impl<T: Write + Seek, U: Packet + PacketSerde> PacketOut<T> for U {
     fn write(&self, writer: &mut PacketWriter<T>) {
         writer.write_raw::<Self>(&self);
     }

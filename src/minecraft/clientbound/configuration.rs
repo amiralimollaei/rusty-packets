@@ -1,12 +1,12 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
     types,
 };
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CookieRequestPacket {
     pub key: types::String,
 }
@@ -17,7 +17,7 @@ impl Packet for CookieRequestPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct ClientboundPluginMessagePacket {
     pub channel: types::Identifier,
     pub data: types::UnsizedByteArray,
@@ -29,7 +29,7 @@ impl Packet for ClientboundPluginMessagePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct DisconnectPacket {
     pub reason: types::NBTValue,
 }
@@ -40,7 +40,7 @@ impl Packet for DisconnectPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ConfigurationFinishPacket;
 
 impl Packet for ConfigurationFinishPacket {
@@ -49,7 +49,7 @@ impl Packet for ConfigurationFinishPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct KeepAlivePacket {
     pub keepalive_id: types::Long,
 }
@@ -60,7 +60,7 @@ impl Packet for KeepAlivePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PingPacket {
     pub timestamp: types::Int,
 }
@@ -71,7 +71,7 @@ impl Packet for PingPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ResetChatPacket;
 
 impl Packet for ResetChatPacket {
@@ -80,13 +80,13 @@ impl Packet for ResetChatPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct RegistryEntry {
     pub id: types::Identifier,
     pub data: types::Optional<types::NBTValue>
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct RegistryDataPacket {
     pub registry_id: types::Identifier,
     pub entries: types::Array<RegistryEntry>,
@@ -98,7 +98,7 @@ impl Packet for RegistryDataPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct RemoveResourcePackPacket {
     pub uuid: types::Optional<types::UUID>,
 }
@@ -109,7 +109,7 @@ impl Packet for RemoveResourcePackPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct AddResourcePackPacket {
     pub uuid: types::UUID,
     pub url: types::String,
@@ -125,7 +125,7 @@ impl Packet for AddResourcePackPacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct StoreCookiePacket {
     pub key: types::Identifier,
     pub payload: types::ByteArray,
@@ -137,7 +137,7 @@ impl Packet for StoreCookiePacket {
 }
 
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct TransferPacket {
     pub host: types::String,
     pub port: types::VarInt,
@@ -149,7 +149,7 @@ impl Packet for TransferPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct FeatureFlagsPacket {
     pub feature_flags: types::Array<types::String>
 }
@@ -160,19 +160,19 @@ impl Packet for FeatureFlagsPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct RegistryTag {
     pub name: types::Identifier,
     pub entries: types::Array<types::VarInt>, // Numeric IDs of the given type (block, item, etc.). This list replaces the previous list of IDs for the given tag. If some preexisting tags are left unmentioned, a warning is printed.
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct RegistryTagMap {
     pub registry: types::Identifier, // Registry identifier (Vanilla expects tags for the registries minecraft:block, minecraft:item, minecraft:fluid, minecraft:entity_type, and minecraft:game_event)
     pub tagsmap: types::Array<RegistryTag>
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct UpdateTagsPacket {
     pub feature_flags: types::Array<types::String>
 }
@@ -183,14 +183,14 @@ impl Packet for UpdateTagsPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ClientboundKnownPacksPacket {
     pub namespace: types::String,
     pub id: types::String,
     pub version: types::String,
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct KnownServerPacksPacket {
     pub packs: types::Array<ClientboundKnownPacksPacket>,
 }
@@ -201,13 +201,13 @@ impl Packet for KnownServerPacksPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CustomReportDetail {
     pub title: types::String,
     pub description: types::String,
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CustomReportDetailsPacket {
     pub details: types::Array<CustomReportDetail>,
 }
@@ -218,13 +218,13 @@ impl Packet for CustomReportDetailsPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ServerLink {
     pub label: types::Or<types::VarInt, types::NBTValue>, // VarInt for predefined labels, NBT for custom ones
     pub url: types::String,
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ServerLinksPacket {
     pub links: types::Array<ServerLink>,
 }

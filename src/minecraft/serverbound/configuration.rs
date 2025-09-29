@@ -1,5 +1,5 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
@@ -20,7 +20,7 @@ pub enum ClientMainHand {
     Right = 1,
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ClientInformationPacket {
     pub locale: types::String,                 // String: max 16 characters
     pub view_distance: types::Byte,            // Byte: for some reason this HAD TO BE SIGNED
@@ -38,7 +38,7 @@ impl Packet for ClientInformationPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CookieResponsePacket {
     pub key: types::String,
     pub payload: types::Optional<types::ByteArray>,
@@ -50,7 +50,7 @@ impl Packet for CookieResponsePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ServerboundPluginMessagePacket {
     pub channel: types::Identifier,
     pub data: types::UnsizedByteArray,
@@ -62,7 +62,7 @@ impl Packet for ServerboundPluginMessagePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Copy)]
+#[derive(PacketSerde, Clone, Copy)]
 pub struct AcknowledgeFinishConfigurationPacket;
 
 impl Packet for AcknowledgeFinishConfigurationPacket {
@@ -71,7 +71,7 @@ impl Packet for AcknowledgeFinishConfigurationPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ServerboundKeepAlivePacket {
     pub keepalive_id: types::Long,
 }
@@ -82,7 +82,7 @@ impl Packet for ServerboundKeepAlivePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PongPacket {
     pub timestamp: types::Int,
 }
@@ -93,7 +93,7 @@ impl Packet for PongPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ResourcePackResponsePacket {
     pub uuid: types::UUID,
     // TODO: make varint enum
@@ -106,14 +106,14 @@ impl Packet for ResourcePackResponsePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ServerboundKnownPacksPacket {
     pub namespace: types::String,
     pub id: types::String,
     pub version: types::String,
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct KnownClientPacksPacket {
     pub packs: types::Array<ServerboundKnownPacksPacket>,
 }

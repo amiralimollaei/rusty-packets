@@ -1,5 +1,5 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
@@ -7,7 +7,7 @@ use crate::minecraft::{
 };
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ConfirmTeleportationPacket {
     pub teleport_id: types::VarInt, // The ID given by the Synchronize Player Position packet.
 }
@@ -18,7 +18,7 @@ impl Packet for ConfirmTeleportationPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct QueryBlockEntityTag {
     pub transaction_id: types::VarInt, // An incremental ID so that the client can verify that the response matches.
     pub location: types::Position,     // The location of the block to check.
@@ -30,7 +30,7 @@ impl Packet for QueryBlockEntityTag {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ChangeDifficultyPacket {
     pub new_difficulty: types::Byte, // 0: peaceful, 1: easy, 2: normal, 3: hard .
 }
@@ -41,7 +41,7 @@ impl Packet for ChangeDifficultyPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct AcknowledgeMessagePacket {
     pub message_count: types::VarInt,
 }
@@ -52,7 +52,7 @@ impl Packet for AcknowledgeMessagePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ChatCommandPacket {
     pub command: types::String,  // The command typed by the client.
 }
@@ -63,13 +63,13 @@ impl Packet for ChatCommandPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CommandArgumentSignature {
     pub name: types::String,     // The name of the argument that is signed by the following signature.
     pub timestamp: types::FixedSizeByteArray<256>,  // The signature that verifies the argument. Always 256 bytes and is not length-prefixed.
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SignedChatCommandPacket {
     pub command: types::String,  // The command typed by the client.
     pub timestamp: types::Long,  // The timestamp that the command was executed.
@@ -86,7 +86,7 @@ impl Packet for SignedChatCommandPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ChatMessagePacket {
     pub message: types::String,  // The message typed by the client.
     pub timestamp: types::Long,  // The timestamp that the message was executed.
@@ -103,7 +103,7 @@ impl Packet for ChatMessagePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SessionPublicKey {
     pub expires_at: types::Long, // The time at which the public key expires, in milliseconds since Unix epoch.
     pub public_key: types::ByteArray, // A byte array of an X.509-encoded public key, Maximum length in Notchian server is 512 bytes.
@@ -112,7 +112,7 @@ pub struct SessionPublicKey {
     pub key_signature: types::ByteArray,
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PlayerSessionPacket {
     pub session_id: types::UUID, // The player's session UUID.
     pub public_key: SessionPublicKey, // The player's public key.
@@ -124,7 +124,7 @@ impl Packet for PlayerSessionPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ChunkBatchReceivedPacket {
     pub chunk_per_tick: types::Float, // Desired chunks per tick.
 }
@@ -135,7 +135,7 @@ impl Packet for ChunkBatchReceivedPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ClientStatusPacket {
     pub action_id: types::VarInt, // 0: perform respawn, 1: request stats
 }
@@ -146,7 +146,7 @@ impl Packet for ClientStatusPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ClientInformationPacket {
     pub locale: types::String,                 // String: max 16 characters
     pub view_distance: types::Byte,            // Byte: for some reason this HAD TO BE SIGNED
@@ -164,7 +164,7 @@ impl Packet for ClientInformationPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CommandSuggestionsRequestPacket {
     // The id of the transaction that the server will send back to the client in the response of this packet.
     // Client generates this and increments it each time it sends another tab completion that doesn't get a response.
@@ -178,7 +178,7 @@ impl Packet for CommandSuggestionsRequestPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct AcknowledgeConfigurationPacket;
 
 impl Packet for AcknowledgeConfigurationPacket {
@@ -187,7 +187,7 @@ impl Packet for AcknowledgeConfigurationPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ClickContainerButtonPacket {
     pub window_id: types::Byte, // The ID of the window sent by Open Screen.
     pub button_id: types::Byte, // Meaning depends on window type.
@@ -199,13 +199,13 @@ impl Packet for ClickContainerButtonPacket {
 }
 
 /*
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ChangedSlot {
     pub slot_number: types::Byte,
     pub slot: Slot,               // New data for this slot, in the client's opinion.
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ClickContainerPacket {
     // The ID of the window which was clicked. 0 for player inventory.
     // The server ignores any packets targeting a Window ID other than the current one, including ignoring 0 when any other window is open.
@@ -224,7 +224,7 @@ impl Packet for ClickContainerPacket {
 }
 */
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CloseContainerPacket {
     pub window_id: types::UnsignedByte, // This is the ID of the window that was closed. 0 for player inventory.
 }
@@ -235,7 +235,7 @@ impl Packet for CloseContainerPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ChangeContainerSlotStatePacket {
     // This packet is sent by the client when toggling the state of a Crafter.
     pub slot_id: types::VarInt, // This is the ID of the slot that was changed.
@@ -249,7 +249,7 @@ impl Packet for ChangeContainerSlotStatePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CookieResponsePacket {
     pub key: types::Identifier,
     pub payload: types::Optional<types::ByteArray>, // The payload is only present if the cookie exists on the client.
@@ -261,7 +261,7 @@ impl Packet for CookieResponsePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ServerboundPluginMessagePacket {
     pub channel: types::Identifier,
     pub data: types::UnsizedByteArray, // Any data, depending on the channel.
@@ -273,7 +273,7 @@ impl Packet for ServerboundPluginMessagePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct DebugSampleSubscriptionPacket {
     pub sample_type: types::VarInt, // The type of debug sample to subscribe to. Can be one of the following: 0 - Tick time
 }
@@ -284,7 +284,7 @@ impl Packet for DebugSampleSubscriptionPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct EditBookPacket {
     pub slot: types::VarInt, // The hotbar slot where the written book is located
     pub entries: types::Array<types::String>, // Text from each page. Maximum string length is 8192 chars.
@@ -298,7 +298,7 @@ impl Packet for EditBookPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct QueryEntityTagPacket {
     pub transaction_id: types::VarInt, // An incremental ID so that the client can verify that the response matches.
     pub entity_id: types::VarInt // The ID of the entity to query.
@@ -310,7 +310,7 @@ impl Packet for QueryEntityTagPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 #[discriminant_type(types::VarInt)]
 pub enum InteractionEnum {
     Interact {hand: types::VarInt},
@@ -319,7 +319,7 @@ pub enum InteractionEnum {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct InteractPacket {
     pub entity_id: types::VarInt,      // The ID of the entity to interact.
     pub interaction: InteractionEnum,
@@ -332,7 +332,7 @@ impl Packet for InteractPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct JigsawGeneratePacket {
     pub location: types::Position,
     pub levels: types::VarInt,
@@ -345,7 +345,7 @@ impl Packet for JigsawGeneratePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct KeepAlivePacket {
     pub keepalive_id: types::Long,
 }
@@ -356,7 +356,7 @@ impl Packet for KeepAlivePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct LockDifficultyPacket {
     pub locked: types::Boolean,
 }
@@ -366,7 +366,7 @@ impl Packet for LockDifficultyPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetPlayerPositionPacket {
     pub position: types::DoubleVec3, // the value for Y is the Absolute feet position, normally Head Y - 1.62.
     pub on_ground: types::Boolean
@@ -378,7 +378,7 @@ impl Packet for SetPlayerPositionPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetPlayerPositionAndRotationPacket {
     pub position: types::DoubleVec3, // the value for Y is the Absolute feet position, normally Head Y - 1.62.
     pub yaw: types::Float,
@@ -392,7 +392,7 @@ impl Packet for SetPlayerPositionAndRotationPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetPlayerRotationPacket {
     pub yaw: types::Float,
     pub ptch: types::Float,
@@ -405,7 +405,7 @@ impl Packet for SetPlayerRotationPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetPlayerOnGroundPacket {
     pub on_ground: types::Boolean
 }
@@ -415,7 +415,7 @@ impl Packet for SetPlayerOnGroundPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct MoveVehiclePacket {
     pub position: types::DoubleVec3, // Absolute position
     pub yaw: types::Float,
@@ -428,7 +428,7 @@ impl Packet for MoveVehiclePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PaddleBoatPacket {
     pub left_paddle_turning: types::Boolean,
     pub right_paddle_turning: types::Boolean,
@@ -440,7 +440,7 @@ impl Packet for PaddleBoatPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PickItemPacket {
     pub slot: types::VarInt,
 }
@@ -451,7 +451,7 @@ impl Packet for PickItemPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PingRequestPacket {
     pub payload: types::Long,
 }
@@ -462,7 +462,7 @@ impl Packet for PingRequestPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PlaceRecipePacket {
     pub window_id: types::Byte,
     pub recipe: types::Identifier,
@@ -475,7 +475,7 @@ impl Packet for PlaceRecipePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PlayerAbilitiesPacket {
     pub flags: types::Byte,    // Bit mask. 0x02: is flying.
 }
@@ -486,7 +486,7 @@ impl Packet for PlayerAbilitiesPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PlayerActionPacket {
     pub status: types::VarInt,      // The action the player is taking against the block
     pub location: types::Position,  // Block position
@@ -500,7 +500,7 @@ impl Packet for PlayerActionPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PlayerCommandPacket {
     pub entity_id: types::VarInt,   // Player ID
     pub action_id: types::VarInt,   // The ID of the action.
@@ -513,7 +513,7 @@ impl Packet for PlayerCommandPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PlayerInputPacket {
     pub sideways: types::Float,      // Positive to the left of the player.
     pub forward: types::Float,       // Positive forward.
@@ -526,7 +526,7 @@ impl Packet for PlayerInputPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct PongPacket {
     pub id: types::Int,
 }
@@ -537,7 +537,7 @@ impl Packet for PongPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ChangeRecipeBookSettingsPacket {
     pub book_id: types::VarInt,
     pub book_open: types::Boolean,
@@ -550,7 +550,7 @@ impl Packet for ChangeRecipeBookSettingsPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetSeenRecipePacket {
     pub recipe_id: types::Identifier,
 }
@@ -561,7 +561,7 @@ impl Packet for SetSeenRecipePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct RenameItemPacket {
     pub item_name: types::String,
 }
@@ -572,7 +572,7 @@ impl Packet for RenameItemPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ResourcePackResponsePacket {
     pub uuid: types::UUID,
     pub result: types::VarInt,
@@ -584,13 +584,13 @@ impl Packet for ResourcePackResponsePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub enum SeenAdvancementAction {
     OpenedTab { tab_id: types::Identifier },
     ClosedScreen
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SeenAdvancementsPacket {
     pub action: SeenAdvancementAction,
 }
@@ -601,7 +601,7 @@ impl Packet for SeenAdvancementsPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SelectTradePacket {
     pub selected_slot: types::VarInt,
 }
@@ -612,7 +612,7 @@ impl Packet for SelectTradePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetBeaconEffectPacket {
     pub primary_effect: types::Optional<types::VarInt>,
     pub secondary_effect: types::Optional<types::VarInt>,
@@ -624,7 +624,7 @@ impl Packet for SetBeaconEffectPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetHeldItemPacket {
     pub slot: types::Short
 }
@@ -635,7 +635,7 @@ impl Packet for SetHeldItemPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ProgramCommandBlockPacket {
     pub location: types::Position,
     pub command: types::String,
@@ -649,7 +649,7 @@ impl Packet for ProgramCommandBlockPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ProgramCommandBlockMinecartPacket {
     pub entity_id: types::VarInt,
     pub command: types::String,
@@ -662,7 +662,7 @@ impl Packet for ProgramCommandBlockMinecartPacket {
 }
 
 /*
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SetCreativeModeSlotPacket {
     pub slot: types::Short,
     pub clicked_item: Slot,
@@ -674,7 +674,7 @@ impl Packet for SetCreativeModeSlotPacket {
 }
 */
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ProgramJigsawBlockPacket {
     pub location: types::Position,   // Block entity location
     pub name: types::Identifier,
@@ -692,7 +692,7 @@ impl Packet for ProgramJigsawBlockPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ProgramStructureBlockPacket {
     pub locatrion: types::Position,  // Block entity location
     pub action: types::VarInt,       // An additional action to perform beyond simply saving the given data
@@ -714,7 +714,7 @@ impl Packet for ProgramStructureBlockPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct UpdateSignPacket {
     pub location: types::Position,      // Block Coordinates.
     pub is_front_text: types::Boolean,  // Whether the updated text is in front or on the back of the sign
@@ -730,7 +730,7 @@ impl Packet for UpdateSignPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct SwingArmPacket {
     pub hand: types::VarInt,  // Hand used for the animation. 0: main hand, 1: off hand.
 }
@@ -741,7 +741,7 @@ impl Packet for SwingArmPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct TeleportToEntityPacket {
     pub target_player: types::UUID,  // UUID of the player to teleport to (can also be an entity UUID).
 }
@@ -752,7 +752,7 @@ impl Packet for TeleportToEntityPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct UseItemOnPacket {
     pub hand: types::VarInt,  // The hand from which the block is placed; 0: main hand, 1: off hand.
     pub location: types::Position,
@@ -769,7 +769,7 @@ impl Packet for UseItemOnPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct UseItemPacket {
     pub hand: types::VarInt,      // Hand used for the animation. 0: main hand, 1: off hand.
     pub sequence: types::VarInt,  // Block change sequence number

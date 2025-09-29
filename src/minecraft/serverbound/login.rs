@@ -1,12 +1,12 @@
-use crate::minecraft::types::MinecraftType;
-use minecraft_type_derive::MinecraftType;
+use crate::minecraft::packet::PacketSerde;
+use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketWritable},
     types,
 };
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct LoginStartPacket {
     pub username: types::String,
     pub uuid: types::UUID,
@@ -17,7 +17,7 @@ impl Packet for LoginStartPacket {
     const PHASE: ConnectionState = ConnectionState::Login;
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct EncryptionResponsePacket {
     pub shared_secret: types::ByteArray,   // Shared Secret value, encrypted with the server's public key.
     pub verify_token: types::ByteArray,    // Verify Token value, encrypted with the same public key as the shared secret.
@@ -28,7 +28,7 @@ impl Packet for EncryptionResponsePacket {
     const PHASE: ConnectionState = ConnectionState::Login;
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct LoginPluginResponsePacket {
     pub message_id: types::VarInt,
     pub successful: types::Boolean,
@@ -41,7 +41,7 @@ impl Packet for LoginPluginResponsePacket {
 }
 
 
-#[derive(MinecraftType, Clone, Copy, Debug)]
+#[derive(PacketSerde, Clone, Copy, Debug)]
 pub struct LoginAcknowledgedPacket;
 
 impl Packet for LoginAcknowledgedPacket {
@@ -50,7 +50,7 @@ impl Packet for LoginAcknowledgedPacket {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct CookieResponsePacket {
     key: types::String,
     payload: types::Optional<types::ByteArray>,

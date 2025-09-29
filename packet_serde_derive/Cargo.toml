@@ -1,5 +1,5 @@
 [package]
-name = "minecraft_type_derive"
+name = "packet_serde_derive"
 version = "0.1.0"
 edition = "2024"
 

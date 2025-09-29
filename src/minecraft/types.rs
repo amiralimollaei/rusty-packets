@@ -1,14 +1,16 @@
 use cesu8;
 use flate2::bufread::GzDecoder;
-use minecraft_type_derive::MinecraftType;
 use regex::Regex;
 
 use std::f32::consts::PI;
 use std::fmt::Debug;
 use std::ops::Deref;
 
-use crate::minecraft::packet::{PacketReadable, PacketWritable};
+use packet_serde_derive::PacketSerde;
+
+use super::packet::{PacketReadable, PacketWritable, PacketSerde};
 use crate::utils::{read_bytes, read_n_bytes};
+
 
 use std::{
     collections::HashMap,
@@ -19,8 +21,6 @@ use std::{
 
 const WRITE_ERROR: &str = "Error while writing to connection";
 const READ_ERROR: &str = "Error while reading connection";
-
-pub trait MinecraftType: PacketReadable + PacketWritable {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Boolean {
@@ -77,7 +77,7 @@ impl PacketReadable for Boolean {
     }
 }
 
-impl MinecraftType for Boolean {}
+impl PacketSerde for Boolean {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Byte {
@@ -145,7 +145,7 @@ impl PacketReadable for Byte {
     }
 }
 
-impl MinecraftType for Byte {}
+impl PacketSerde for Byte {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UnsignedByte {
@@ -198,7 +198,7 @@ impl UnsignedByte {
     }
 }
 
-impl MinecraftType for UnsignedByte {}
+impl PacketSerde for UnsignedByte {}
 
 impl PacketWritable for UnsignedByte {
     fn write(&self, stream: &mut impl Write) {
@@ -280,7 +280,7 @@ impl PacketReadable for Short {
     }
 }
 
-impl MinecraftType for Short {}
+impl PacketSerde for Short {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UnsignedShort {
@@ -348,7 +348,7 @@ impl PacketReadable for UnsignedShort {
     }
 }
 
-impl MinecraftType for UnsignedShort {}
+impl PacketSerde for UnsignedShort {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Int {
@@ -412,7 +412,7 @@ impl PacketReadable for Int {
     }
 }
 
-impl MinecraftType for Int {}
+impl PacketSerde for Int {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Long {
@@ -476,7 +476,7 @@ impl PacketReadable for Long {
     }
 }
 
-impl MinecraftType for Long {}
+impl PacketSerde for Long {}
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Float {
@@ -540,7 +540,7 @@ impl PacketReadable for Float {
     }
 }
 
-impl MinecraftType for Float {}
+impl PacketSerde for Float {}
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Double {
@@ -604,7 +604,7 @@ impl PacketReadable for Double {
     }
 }
 
-impl MinecraftType for Double {}
+impl PacketSerde for Double {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarInt {
@@ -707,7 +707,7 @@ impl PacketReadable for VarInt {
     }
 }
 
-impl MinecraftType for VarInt {}
+impl PacketSerde for VarInt {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarLong {
@@ -813,7 +813,7 @@ impl PacketReadable for VarLong {
     }
 }
 
-impl MinecraftType for VarLong {}
+impl PacketSerde for VarLong {}
 
 // addresses the limitations of https://wiki.vg/Protocol#Packet_format
 // it's VarInt but limited to 2^21 -1 max value and 3 bytes max size
@@ -952,7 +952,7 @@ impl PacketReadable for Length {
     }
 }
 
-impl MinecraftType for Length {}
+impl PacketSerde for Length {}
 
 // implements https://wiki.vg/Protocol#Position
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -1067,7 +1067,7 @@ impl PacketReadable for Position {
     }
 }
 
-impl MinecraftType for Position {}
+impl PacketSerde for Position {}
 
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Angle {
@@ -1132,7 +1132,7 @@ impl PacketReadable for Angle {
     }
 }
 
-impl MinecraftType for Angle {}
+impl PacketSerde for Angle {}
 
 #[derive(Debug)]
 pub struct ParseUUIDError;
@@ -1226,7 +1226,7 @@ impl PacketReadable for UUID {
     }
 }
 
-impl MinecraftType for UUID {}
+impl PacketSerde for UUID {}
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct String {
@@ -1341,7 +1341,7 @@ impl PacketReadable for String {
     }
 }
 
-impl MinecraftType for String {}
+impl PacketSerde for String {}
 
 // it's just a string, but verified
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -1475,15 +1475,15 @@ impl PacketReadable for Identifier {
     }
 }
 
-impl MinecraftType for Identifier {}
+impl PacketSerde for Identifier {}
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum Optional<T: MinecraftType> {
+pub enum Optional<T: PacketSerde> {
     Some(T),
     None,
 }
 
-impl<T: Debug + MinecraftType> Debug for Optional<T> {
+impl<T: Debug + PacketSerde> Debug for Optional<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Some(v) => {
@@ -1496,7 +1496,7 @@ impl<T: Debug + MinecraftType> Debug for Optional<T> {
     }
 }
 
-impl<T: MinecraftType, U: Into<T>> From<Option<U>> for Optional<T> {
+impl<T: PacketSerde, U: Into<T>> From<Option<U>> for Optional<T> {
     fn from(value: Option<U>) -> Self {
         match value {
             Some(v) => Self::Some(v.into()),
@@ -1505,7 +1505,7 @@ impl<T: MinecraftType, U: Into<T>> From<Option<U>> for Optional<T> {
     }
 }
 
-impl<T: MinecraftType> Into<Option<T>> for Optional<T> {
+impl<T: PacketSerde> Into<Option<T>> for Optional<T> {
     fn into(self) -> Option<T> {
         match self {
             Self::Some(v) => Some(v),
@@ -1514,7 +1514,7 @@ impl<T: MinecraftType> Into<Option<T>> for Optional<T> {
     }
 }
 
-impl<T: MinecraftType> Optional<T> {
+impl<T: PacketSerde> Optional<T> {
     /// Converts this `Optional<T>` into a standard `Option<U>`,
     /// consuming the original value and converting the inner type.
     pub fn into_option<U>(self) -> Option<U>
@@ -1528,7 +1528,7 @@ impl<T: MinecraftType> Optional<T> {
     }
 }
 
-impl<T: MinecraftType> Optional<T> {
+impl<T: PacketSerde> Optional<T> {
     pub fn is_some(&self) -> bool {
         match self {
             Self::Some(_) => false,
@@ -1537,7 +1537,7 @@ impl<T: MinecraftType> Optional<T> {
     }
 }
 
-impl<T: MinecraftType> PacketReadable for Optional<T> {
+impl<T: PacketSerde> PacketReadable for Optional<T> {
     fn read(stream: &mut impl Read) -> Self {
         let is_some = Boolean::read(stream).get_value();
         if is_some {
@@ -1548,7 +1548,7 @@ impl<T: MinecraftType> PacketReadable for Optional<T> {
     }
 }
 
-impl<T: MinecraftType> PacketWritable for Optional<T> {
+impl<T: PacketSerde> PacketWritable for Optional<T> {
     fn write(&self, stream: &mut impl Write) {
         match self {
             Optional::Some(v) => {
@@ -1562,33 +1562,33 @@ impl<T: MinecraftType> PacketWritable for Optional<T> {
     }
 }
 
-impl<T: MinecraftType> MinecraftType for Optional<T> {}
+impl<T: PacketSerde> PacketSerde for Optional<T> {}
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 
-pub struct Array<T: MinecraftType> {
+pub struct Array<T: PacketSerde> {
     values: Vec<T>,
 }
 
-impl<T: Debug + MinecraftType> Debug for Array<T> {
+impl<T: Debug + PacketSerde> Debug for Array<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!("{:?}", &self.values))
     }
 }
 
-impl<T: MinecraftType> Into<Vec<T>> for Array<T> {
+impl<T: PacketSerde> Into<Vec<T>> for Array<T> {
     fn into(self) -> Vec<T> {
         self.values
     }
 }
 
-impl<T: MinecraftType> From<Vec<T>> for Array<T> {
+impl<T: PacketSerde> From<Vec<T>> for Array<T> {
     fn from(values: Vec<T>) -> Self {
         Self { values }
     }
 }
 
-impl<T: MinecraftType> From<&[T]> for Array<T>
+impl<T: PacketSerde> From<&[T]> for Array<T>
 where
     T: Clone,
 {
@@ -1599,7 +1599,7 @@ where
     }
 }
 
-impl<T: MinecraftType> Array<T> {
+impl<T: PacketSerde> Array<T> {
     pub fn new(values: Vec<T>) -> Self {
         Self { values: values }
     }
@@ -1609,7 +1609,7 @@ impl<T: MinecraftType> Array<T> {
     }
 }
 
-impl<T: MinecraftType> Deref for Array<T> {
+impl<T: PacketSerde> Deref for Array<T> {
     type Target = Vec<T>;
 
     fn deref(&self) -> &Self::Target {
@@ -1617,7 +1617,7 @@ impl<T: MinecraftType> Deref for Array<T> {
     }
 }
 
-impl<T: MinecraftType> PacketReadable for Array<T> {
+impl<T: PacketSerde> PacketReadable for Array<T> {
     fn read(stream: &mut impl Read) -> Self {
         let values_count = VarInt::read(stream).get_value() as usize;
         let mut values = Vec::with_capacity(values_count);
@@ -1628,7 +1628,7 @@ impl<T: MinecraftType> PacketReadable for Array<T> {
     }
 }
 
-impl<T: MinecraftType> PacketWritable for Array<T> {
+impl<T: PacketSerde> PacketWritable for Array<T> {
     fn write(&self, stream: &mut impl Write) {
         VarInt::new(self.values.len() as i32).write(stream);
         for value in &self.values {
@@ -1637,7 +1637,7 @@ impl<T: MinecraftType> PacketWritable for Array<T> {
     }
 }
 
-impl<T: MinecraftType> MinecraftType for Array<T> {}
+impl<T: PacketSerde> PacketSerde for Array<T> {}
 
 // a very common type of arrays, this is equalent to a size prefixed Array<u8>, but
 // it is implemented in a way that is more optimized and more convenient
@@ -1707,7 +1707,7 @@ impl PacketWritable for ByteArray {
     }
 }
 
-impl MinecraftType for ByteArray {}
+impl PacketSerde for ByteArray {}
 
 // a very common type of arrays that their size is inferred by the packet length
 // it is implemented in a way that is more optimized and more convenient
@@ -1775,18 +1775,18 @@ impl PacketWritable for UnsizedByteArray {
     }
 }
 
-impl MinecraftType for UnsizedByteArray {}
+impl PacketSerde for UnsizedByteArray {}
 
-macro_rules! impl_minecraft_type_for_tuple {
+macro_rules! impl_packet_serde_for_tuple {
     // The macro takes two lists:
     //  - $($T:ident),+ : A list of generic type names (e.g., T0, T1, T2)
     //  - $($idx:tt),+  : A list of the corresponding tuple indices (e.g., 0, 1, 2)
     ( $($T:ident),+ ; $($idx:tt),+ ) => {
-        // Implement the marker trait `MinecraftType` for the tuple
-        impl<$($T),+> MinecraftType for ( $($T,)+ )
+        // Implement the marker trait `PacketSerde` for the tuple
+        impl<$($T),+> PacketSerde for ( $($T,)+ )
         where
-            // This is only valid if every element in the tuple is also a MinecraftType
-            $( $T: MinecraftType ),+
+            // This is only valid if every element in the tuple is also a PacketSerde
+            $( $T: PacketSerde ),+
         {}
 
         // Implement `PacketWritable` for the tuple
@@ -1832,12 +1832,12 @@ macro_rules! impl_minecraft_type_for_tuple {
 
 //                Type Names | Indices
 //                -----------|--------
-impl_minecraft_type_for_tuple!(T0;        0);
-impl_minecraft_type_for_tuple!(T0, T1;    0, 1);
-impl_minecraft_type_for_tuple!(T0, T1, T2; 0, 1, 2);
-impl_minecraft_type_for_tuple!(T0, T1, T2, T3; 0, 1, 2, 3);
-impl_minecraft_type_for_tuple!(T0, T1, T2, T3, T4; 0, 1, 2, 3, 4);
-impl_minecraft_type_for_tuple!(T0, T1, T2, T3, T4, T5; 0, 1, 2, 3, 4, 5);
+impl_packet_serde_for_tuple!(T0;        0);
+impl_packet_serde_for_tuple!(T0, T1;    0, 1);
+impl_packet_serde_for_tuple!(T0, T1, T2; 0, 1, 2);
+impl_packet_serde_for_tuple!(T0, T1, T2, T3; 0, 1, 2, 3);
+impl_packet_serde_for_tuple!(T0, T1, T2, T3, T4; 0, 1, 2, 3, 4);
+impl_packet_serde_for_tuple!(T0, T1, T2, T3, T4, T5; 0, 1, 2, 3, 4, 5);
 
 /// A custom trait for element-wise tuple conversion, used when `From`/`Into`
 /// cannot be implemented due to Rust's orphan rule.
@@ -2309,17 +2309,17 @@ impl PacketReadable for NBTValue {
     }
 }
 
-impl MinecraftType for NBTValue {}
+impl PacketSerde for NBTValue {}
 
 // ------------- NBT Implentation end -------------
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum Or<A: MinecraftType, B: MinecraftType> {
+pub enum Or<A: PacketSerde, B: PacketSerde> {
     A(A),
     B(B),
 }
 
-impl<A: Debug + MinecraftType, B: Debug + MinecraftType> Debug for Or<A, B> {
+impl<A: Debug + PacketSerde, B: Debug + PacketSerde> Debug for Or<A, B> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::A(v) => f.write_str(&format!("A({:?})", v)),
@@ -2328,7 +2328,7 @@ impl<A: Debug + MinecraftType, B: Debug + MinecraftType> Debug for Or<A, B> {
     }
 }
 
-impl<A: MinecraftType, B: MinecraftType> Or<A, B> {
+impl<A: PacketSerde, B: PacketSerde> Or<A, B> {
     pub fn from_a(value: A) -> Self {
         Or::A(value)
     }
@@ -2352,13 +2352,13 @@ impl<A: MinecraftType, B: MinecraftType> Or<A, B> {
     }
 }
 
-impl<A: MinecraftType, B: MinecraftType> From<A> for Or<A, B> {
+impl<A: PacketSerde, B: PacketSerde> From<A> for Or<A, B> {
     fn from(value: A) -> Self {
         Or::A(value)
     }
 }
 
-impl<A: MinecraftType, B: MinecraftType> PacketReadable for Or<A, B> {
+impl<A: PacketSerde, B: PacketSerde> PacketReadable for Or<A, B> {
     fn read(stream: &mut impl Read) -> Self {
         let is_a = Boolean::read(stream).get_value();
         if is_a {
@@ -2369,7 +2369,7 @@ impl<A: MinecraftType, B: MinecraftType> PacketReadable for Or<A, B> {
     }
 }
 
-impl<A: MinecraftType, B: MinecraftType> PacketWritable for Or<A, B> {
+impl<A: PacketSerde, B: PacketSerde> PacketWritable for Or<A, B> {
     fn write(&self, stream: &mut impl Write) {
         match self {
             Or::A(v) => {
@@ -2384,9 +2384,9 @@ impl<A: MinecraftType, B: MinecraftType> PacketWritable for Or<A, B> {
     }
 }
 
-impl<A: MinecraftType, B: MinecraftType> MinecraftType for Or<A, B> {}
+impl<A: PacketSerde, B: PacketSerde> PacketSerde for Or<A, B> {}
 
-impl<A: MinecraftType, B: MinecraftType> Into<(Option<A>, Option<B>)> for Or<A, B> {
+impl<A: PacketSerde, B: PacketSerde> Into<(Option<A>, Option<B>)> for Or<A, B> {
     fn into(self) -> (Option<A>, Option<B>) {
         match self {
             Or::A(a) => (Some(a), None),
@@ -2455,7 +2455,7 @@ impl<const N: usize> PacketWritable for FixedSizeByteArray<N> {
     }
 }
 
-impl<const N: usize> MinecraftType for FixedSizeByteArray<N> {}
+impl<const N: usize> PacketSerde for FixedSizeByteArray<N> {}
 
 
 // A fixed-size bit set.
@@ -2548,7 +2548,7 @@ impl<const N: usize> PacketWritable for FixedSizeBitSet<N> {
     }
 }
 
-impl<const N: usize> MinecraftType for FixedSizeBitSet<N> {}
+impl<const N: usize> PacketSerde for FixedSizeBitSet<N> {}
 
 // A length-prefixed bit set.
 // The length (number of bits) is prefixed as a VarInt.
@@ -2660,11 +2660,11 @@ impl PacketWritable for BitSet {
     }
 }
 
-impl MinecraftType for BitSet {}
+impl PacketSerde for BitSet {}
 
 // ####### compound types #######
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ByteVec3 {
     pub x: Byte,
     pub y: Byte,
@@ -2672,7 +2672,7 @@ pub struct ByteVec3 {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct ShortVec3 {
     pub x: Short,
     pub y: Short,
@@ -2680,21 +2680,21 @@ pub struct ShortVec3 {
 }
 
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct FloatVec3 {
     pub x: Float,
     pub y: Float,
     pub z: Float
 }
 
-#[derive(MinecraftType, Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub struct DoubleVec3 {
     pub x: Double,
     pub y: Double,
     pub z: Double
 }
 
-#[derive(MinecraftType, Debug, Clone)]
+#[derive(PacketSerde, Debug, Clone)]
 pub struct Location {
     pub x: Double,
     pub y: Double,
