@@ -233,3 +233,28 @@ impl Packet for ServerLinksPacket {
     const ID: i32 = 0x10;
     const PHASE: ConnectionState = ConnectionState::Configuration;
 }
+
+/*
+// ###### Generic Clientbound Configuration Packet ######
+
+#[derive(PacketSerde, Clone, Debug)]
+pub enum ClientboundConfigurationPacket {
+    CookieRequest(CookieRequestPacket),
+    PluginMessage(ClientboundPluginMessagePacket),
+    Disconnect(DisconnectPacket),
+    ConfigurationFinish(ConfigurationFinishPacket),
+    KeepAlive(KeepAlivePacket),
+    Ping(PingPacket),
+    ResetChat(ResetChatPacket),
+    RegistryData(RegistryDataPacket),
+    RemoveResourcePack(RemoveResourcePackPacket),
+    AddResourcePack(AddResourcePackPacket),
+    StoreCookie(StoreCookiePacket),
+    Transfer(TransferPacket),
+    FeatureFlags(FeatureFlagsPacket),
+    UpdateTags(UpdateTagsPacket),
+    KnownServerPacks(KnownServerPacksPacket),
+    CustomReportDetails(CustomReportDetailsPacket),
+    ServerLinks(ServerLinksPacket),
+}
+*/

@@ -1,8 +1,9 @@
 use packet_serde_derive::PacketSerde;
+use serde::de;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
-    types,
+    packet::{ConnectionState, Packet, PacketReadable, PacketSerde, PacketWritable},
+    types::{self, Array},
 };
 
 
@@ -397,6 +398,286 @@ impl Packet for DisconnectPacket {
 
 
 #[derive(PacketSerde, Debug, Clone)]
+pub struct DisguisedChatMessagePacket {
+    pub message: types::NBTValue,      // Text Component: This is used as the content parameter when formatting the message on the client.
+    pub chat_type: types::VarInt,      // The type of chat in the minecraft:chat_type registry, defined by the Registry Data packet.
+    pub sender_name: types::NBTValue,  // This is used as the sender parameter when formatting the message on the client.
+    pub target_name: types::Optional<types::NBTValue>
+}
+
+impl Packet for DisguisedChatMessagePacket {
+    const ID: i32 = 0x1E;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct EntityEventPacket {
+    pub entity_id: types::Int,
+    pub entity_status: types::Byte
+}
+
+impl Packet for EntityEventPacket {
+    const ID: i32 = 0x1F;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum VibrationPositionSourceEnum {
+    Block {
+        position: types::Position  // The position of the block the vibration originated from.
+    },
+    Entity {
+        id: types::VarInt,        // The ID of the entity the vibration originated from. 
+        eye_height: types::Float  // The height of the entity's eye relative to the entity. 
+    }
+}
+
+/*
+TODO: this packet cannot be seralized because of the following types that are not implemented yet
+ - Slot
+ - SoundEvent
+ - IdOr<T>
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum ParticleEnum {
+    AngryVillager,
+    Block {
+        block_state: types::VarInt  // The ID of the block state.
+    },
+    BlockMarker {
+        block_state: types::VarInt  // The ID of the block state.
+    },
+    Bubble,
+    Cloud,
+    Crit,
+    DamageIndicator,
+    DragonBreath,
+    DrippingLava,
+    FallingLava,
+    LandingLava,
+    DrippingWater,
+    FallingWater,
+    Dust {
+        red: types::Float,    // The red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        green: types::Float,  // The green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        blue: types::Float,   // The blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        scale: types::Float,  // The scale, will be clamped between 0.01 and 4.
+    },
+    DustColorTransition {
+        from_red: types::Float,    // The start red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        from_green: types::Float,  // The start green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        from_blue: types::Float,   // The start blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_red: types::Float,      // The end red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_green: types::Float,    // The end green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_blue: types::Float,     // The end blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        scale: types::Float,       // The scale, will be clamped between 0.01 and 4.
+    },
+    Effect,
+    ElderGuardian,
+    EnchantedHit,
+    Enchant,
+    EndRod,
+    EntityEffect {
+        color: types::Int,  // The ARGB components of the color encoded as an Int
+    },
+    ExplotionEmitter,
+    Explosion,
+    Gust,
+    SmallGust,
+    GustEmitterLarge,
+    GustEmitterSmall,
+    SonicBoom,
+    FallingDust {
+        block_state: types::VarInt  // The ID of the block state.
+    },
+    Firework,
+    Fishing,
+    Flame,
+    Infested,
+    CherryLeaves,
+    SculkSoul,
+    SculkCharge {
+        roll: types::Float  // How much the particle will be rotated when displayed.
+    },
+    SculkChargePop,
+    SoulFireFlame,
+    Soul,
+    Flash,
+    HappyVillager,
+    Composter,
+    Heart,
+    InstantEffect,
+    Item {
+        item: Slot  // The item that will be used.
+    },
+    Vibration {
+        position_source: VibrationPositionSourceEnum,  // the vibration source
+        ticks: types::VarInt  // The amount of ticks it takes for the vibration to travel from its source to its destination.
+    },
+    ItemSlime,
+    ItemCobweb,
+    ItemSnowball,
+    LargeSmoke,
+    Lava,
+    Mycelium,
+    Note,
+    Poof,
+    Portal,
+    Rain,
+    Smoke,
+    WhiteSmoke,
+    Sneeze,
+    Spit,
+    SquidInk,
+    SweepAttack,
+    TotemOfUndying,
+    Underwater,
+    Splash,
+    Witch,
+    BubblePop,
+    CurrentDown,
+    BubbleColumnUp,
+    Nautilus,
+    Dolphin,
+    CampfireCosySmoke,
+    CampfireSignalSmoke,
+    DrippingHoney,
+    FallingHoney,
+    LandingHoney,
+    FallingNectar,
+    FallingSporeBlossom,
+    Ash,
+    CrimsonSpore,
+    WarpedSpore,
+    SporeBlossomAir,
+    DrippingObsidianTear,
+    FallingObsidianTear,
+    LandingObsidianTear,
+    ReversePortal,
+    WhiteAsh,
+    SmallFlame,
+    SnowFlake,
+    DrippingDripstoneLava,
+    FallingDripstoneLava,
+    DrippingDripstoneWater,
+    FallingDripstoneWater,
+    GlowSquidInk,
+    Glow,
+    WaxOn,
+    WaxOff,
+    ElectricSpark,
+    Scrape,
+    Shriek {
+        delay: types::VarInt // The time in ticks before the particle is displayed
+    },
+    EggCrack,
+    DustPlume,
+    TrialSpawnerDetection,
+    TrialSpawnerDetectionOminous,
+    VaultConnection,
+    DustPillar {
+        block_state: types::VarInt  // The ID of the block state.
+    },
+    OminousSpawning,
+    RaidOmen,
+    TrialOmen,
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct ExplosionPacket {
+    pub position: types::DoubleVec3,
+    // If the strength is greater or equal to 2.0, or the block interaction is not 0 (keep),
+    // large explosion particles are used. Otherwise, small explosion particles are used.
+    pub strength: types::Float,
+    // Each record is 3 signed bytes long; the 3 bytes are the XYZ (respectively) signed offsets of affected blocks.
+    pub records: types::Array<types::ByteVec3>,
+    pub player_motion: types::FloatVec3, // velocity of the player being pushed by the explosion.
+    pub block_interaction: types::VarInt,
+    pub small_explosion_particle: ParticleEnum,
+    pub large_explosion_particle: ParticleEnum,
+    pub explotion_sound: types::IdOr<types::SoundEvent>,
+}
+
+impl Packet for ExplosionPacket {
+    const ID: i32 = 0x20;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+*/
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct UnloadChunkPacket {
+    pub chunk_x: types::Int,  // Block coordinate divided by 16 (rounded down)
+    pub chunk_z: types::Int,  // Block coordinate divided by 16 (rounded down)
+}
+
+impl Packet for UnloadChunkPacket {
+    const ID: i32 = 0x21;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct GameEventPacket {
+    pub event: types::UnsignedByte,
+    pub value: types::Float,
+}
+
+impl Packet for GameEventPacket {
+    const ID: i32 = 0x22;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct OpenHorseScreenPacket {
+    pub window_id: types::UnsignedByte,
+    pub slot_count: types::VarInt,
+    pub entity_id: types::Int,
+}
+
+impl Packet for OpenHorseScreenPacket {
+    const ID: i32 = 0x23;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct HurtAnimationPacket {
+    pub entity_id: types::Int,
+    pub yaw: types::Float,
+}
+
+impl Packet for HurtAnimationPacket {
+    const ID: i32 = 0x24;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct InitializeWorldBorderPacket {
+    pub x: types::Double,
+    pub z: types::Double,
+    pub old_diameter: types::Double,   // Current length of a single side of the world border, in meters.
+    pub new_diameter: types::Double,   // Target length of a single side of the world border, in meters.
+    // Number of real-time milliseconds until New Diameter is reached. It appears that Notchian server does
+    // not sync world border speed to game ticks, so it gets out of sync with server lag. If the world border
+    // is not moving, this is set to 0.
+    pub speed: types::VarLong,
+    pub portal_teleport_boundary: types::VarInt,
+    pub warning_blocks: types::VarInt,  // In meters.
+    pub warning_time: types::VarInt,    // In seconds as set by /worldborder warning time.
+}
+
+impl Packet for InitializeWorldBorderPacket {
+    const ID: i32 = 0x25;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
 pub struct KeepAlivePacket {
     pub keepalive_id: types::Long,
 }
@@ -406,6 +687,88 @@ impl Packet for KeepAlivePacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct BlockEntityData {
+    // The X and Z coordinates of the block entity, packed into a single byte.
+    // The X coordinate is stored in the upper 4 bits, and the Z coordinate is stored in the lower 4 bits.
+    pub packed_xz: types::UnsignedByte, 
+    pub y: types::UnsignedShort,  // The height relative to the world
+    pub type_: types::VarInt,     // The type of block entity
+    pub data: types::NBTValue,    // The block entity's data, without the X, Y, and Z values
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct ChunkDataAndUpdateLightPacket {
+    pub chunk_x: types::Int,  // Block coordinate divided by 16 (rounded down)
+    pub chunk_z: types::Int,  // Block coordinate divided by 16 (rounded down)
+    pub heightmaps: types::NBTValue,
+    pub data: types::ByteArray,
+    pub block_entities: types::Array<BlockEntityData>,
+    pub sky_light_mask: types::BitSet,
+    pub block_light_mask: types::BitSet,
+    pub empty_sky_light_mask: types::BitSet,
+    pub empty_block_light_mask: types::BitSet,
+    pub sky_light_arrays: types::Array<types::ByteArray>,
+    pub block_light_arrays: types::Array<types::ByteArray>,
+}
+
+impl Packet for ChunkDataAndUpdateLightPacket {
+    const ID: i32 = 0x27;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct WorldEventPacket {
+    pub event: types::Int,
+    pub position: types::Position,
+    pub data: types::Int,
+    pub disable_relative_volume: types::Boolean
+}
+
+impl Packet for WorldEventPacket {
+    const ID: i32 = 0x28;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+/*
+TODO: this packet cannot be seralized because of the following types that are not implemented yet
+ - Slot
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct ParticlePacket {
+    pub long_distance: types::Boolean,  // If true, particle distance increases from 256 to 65536.
+    pub position: types::DoubleVec3,
+    pub offset: types::FloatVec3,       // This is added to the X position after being multiplied by random.nextGaussian().
+    pub max_speed: types::Float,
+    pub particle_count: types::Int,     // The number of particles to create.
+    pub disable_relative_volume: types::Boolean
+    pub particle: ParticleEnum,
+}
+
+impl Packet for ParticlePacket {
+    const ID: i32 = 0x29;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+*/
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct UpdateLightPacket {
+    pub chunk_x: types::VarInt,
+    pub chunk_z: types::VarInt,
+    pub sky_light_mask: types::BitSet,
+    pub block_light_mask: types::BitSet,
+    pub empty_sky_light_mask: types::BitSet,
+    pub empty_block_light_mask: types::BitSet,
+    pub sky_light_arrays: types::Array<types::ByteArray>,
+    pub block_light_arrays: types::Array<types::ByteArray>,
+}
+
+impl Packet for UpdateLightPacket {
+    const ID: i32 = 0x2A;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct LoginPacket {
@@ -433,6 +796,80 @@ pub struct LoginPacket {
 
 impl Packet for LoginPacket {
     const ID: i32 = 0x2B;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct MapIcon {
+    pub type_: types::VarInt,
+    pub x: types::Byte,  // Map coordinates: -128 for furthest left, +127 for furthest right
+    pub z: types::Byte,  // Map coordinates: -128 for highest, +127 for lowest
+    pub direction: types::Byte,
+    pub display_name: types::Optional<types::NBTValue>  // Optional Text Component
+}
+
+#[derive(Debug, Clone)]
+pub struct MapColorPatch {
+    pub columns: types::UnsignedByte,  // Number of columns updated
+    pub rows: Option<types::UnsignedByte>,     // Only if Columns is more than 0; number of rows updated
+    pub x: Option<types::UnsignedByte>,        // Only if Columns is more than 0; x offset of the westernmost column
+    pub z: Option<types::UnsignedByte>,        // Only if Columns is more than 0; z offset of the northernmost row
+    pub data: Option<types::Array<types::ByteArray>>,  // Only if Columns is more than 0
+}
+
+impl PacketReadable for MapColorPatch {
+    fn read(stream: &mut impl std::io::Read) -> Self {
+        let columns = types::UnsignedByte::read(stream);
+        if columns.get_value() > 0 {
+            let rows = types::UnsignedByte::read(stream);
+            let x = types::UnsignedByte::read(stream);
+            let z = types::UnsignedByte::read(stream);
+            let data = types::Array::<types::ByteArray>::read(stream);
+            MapColorPatch {
+                columns,
+                rows: Some(rows),
+                x: Some(x),
+                z: Some(z),
+                data: Some(data),
+            }
+        } else {
+            MapColorPatch {
+                columns,
+                rows: None,
+                x: None,
+                z: None,
+                data: None,
+            }
+        }
+    }
+}
+
+impl PacketWritable for MapColorPatch {
+    fn write(&self, stream: &mut impl std::io::Write) {
+        self.columns.write(stream);
+        if self.columns.get_value() > 0 {
+            self.rows.as_ref().unwrap().write(stream);
+            self.x.as_ref().unwrap().write(stream);
+            self.z.as_ref().unwrap().write(stream);
+            self.data.as_ref().unwrap().write(stream);
+        }
+    }
+}
+
+impl PacketSerde for MapColorPatch {}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct MapDataPacket {
+    pub map_id: types::VarInt,
+    pub scale: types::Byte,
+    pub locked: types::Boolean,
+    pub icons: types::Optional<types::Array<MapIcon>>,
+    pub color_patch: MapColorPatch,
+}
+
+impl Packet for MapDataPacket {
+    const ID: i32 = 0x2C;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 

@@ -1,6 +1,7 @@
 use cesu8;
 use flate2::bufread::GzDecoder;
 use regex::Regex;
+use serde::de::value;
 
 use std::f32::consts::PI;
 use std::fmt::Debug;
@@ -1564,8 +1565,71 @@ impl<T: PacketSerde> PacketWritable for Optional<T> {
 
 impl<T: PacketSerde> PacketSerde for Optional<T> {}
 
+// an array that is prefixed with its size as an UnsignedByte
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct FixedSizeArray<T: PacketSerde, const N: usize> {
+    values: [T; N],
+}
 
+impl<T: Debug + PacketSerde, const N: usize> Debug for FixedSizeArray<T, N> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", &self.values))
+    }
+}
+
+impl<T: PacketSerde, const N: usize> Into<[T; N]> for FixedSizeArray<T, N> {
+    fn into(self) -> [T; N] {
+        self.values
+    }
+}
+
+impl<T: PacketSerde, const N: usize> From<[T; N]> for FixedSizeArray<T, N> {
+    fn from(values: [T; N]) -> Self {
+        Self { values }
+    }
+}
+
+impl<T: PacketSerde, const N: usize> FixedSizeArray<T, N> {
+    pub fn new(values: [T; N]) -> Self {
+        Self { values: values }
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+}
+
+impl<T: PacketSerde, const N: usize> Deref for FixedSizeArray<T, N> {
+    type Target = [T; N];
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
+}
+
+impl<T: PacketSerde + Debug, const N: usize> PacketReadable for FixedSizeArray<T, N> {
+    fn read(stream: &mut impl Read) -> Self {
+        let mut values = Vec::with_capacity(N);
+        for _ in 0..N {
+            values.push(T::read(stream));
+        }
+        let values: [T; N] = values.try_into().expect("invalid array length");
+        Self { values }
+    }
+}
+
+impl<T: PacketSerde, const N: usize> PacketWritable for FixedSizeArray<T, N> {
+    fn write(&self, stream: &mut impl Write) {
+        for value in &self.values {
+            value.write(stream);
+        }
+    }
+}
+
+impl<T: PacketSerde + Debug, const N: usize> PacketSerde for FixedSizeArray<T, N> {}
+
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Array<T: PacketSerde> {
     values: Vec<T>,
 }
@@ -1588,10 +1652,7 @@ impl<T: PacketSerde> From<Vec<T>> for Array<T> {
     }
 }
 
-impl<T: PacketSerde> From<&[T]> for Array<T>
-where
-    T: Clone,
-{
+impl<T: PacketSerde + Clone> From<&[T]> for Array<T> {
     fn from(slice: &[T]) -> Self {
         Self {
             values: slice.to_vec(),
@@ -1642,7 +1703,6 @@ impl<T: PacketSerde> PacketSerde for Array<T> {}
 // a very common type of arrays, this is equalent to a size prefixed Array<u8>, but
 // it is implemented in a way that is more optimized and more convenient
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-
 pub struct ByteArray {
     values: Vec<u8>,
 }
@@ -2459,7 +2519,7 @@ impl<const N: usize> PacketSerde for FixedSizeByteArray<N> {}
 
 
 // A fixed-size bit set.
-// The size `BYTES` is the number of bytes.
+// The size `N` is the number of bytes.
 // The data is stored as a byte array of that size.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct FixedSizeBitSet<const N: usize> {
@@ -2551,53 +2611,59 @@ impl<const N: usize> PacketWritable for FixedSizeBitSet<N> {
 impl<const N: usize> PacketSerde for FixedSizeBitSet<N> {}
 
 // A length-prefixed bit set.
-// The length (number of bits) is prefixed as a VarInt.
+// encoded as A packed representation of the bit set as created by Java's BitSet.toLongArray.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct BitSet {
-    values: Vec<u8>,
+    values: Vec<i64>,
     bit_count: usize,
 }
 
 impl BitSet {
-    pub fn new(values: Vec<u8>, bit_count: usize) -> Self {
-        let byte_count = (bit_count + 7) / 8;
-        assert_eq!(values.len(), byte_count, "Invalid number of bytes for the given bit count");
+    pub fn new(values: Vec<i64>, bit_count: usize) -> Self {
+        if values.len() * 64 < bit_count {
+            panic!("BitSet: values length is too small for the given bit_count");
+        }
+        if (values.len() + 1) * 64 >= bit_count {
+            panic!("BitSet: values length is too large for the given bit_count");
+        }
         Self { values, bit_count }
+    }
+
+    pub fn get_bit_count(&self) -> usize {
+        self.values.len() * 64
     }
 
     /// Gets the bit at the given index.
     /// Panics if the index is out of bounds.
     pub fn get_bit(&self, index: usize) -> bool {
-        if index >= self.bit_count {
-            panic!("Bit index out of bounds: the len is {} but the index is {}", self.bit_count, index);
+        if index >= self.get_bit_count() {
+            panic!("Bit index out of bounds: the len is {} but the index is {}", self.get_bit_count(), index);
         }
-        let byte_index = index / 8;
-        let bit_in_byte_index = 7 - (index % 8); // MSB-first
-        (self.values[byte_index] >> bit_in_byte_index) & 1 != 0
+        (self.values[index / 64] & (1 << (index % 64))) != 0
     }
 
     /// Sets the bit at the given index to the given value.
     /// Panics if the index is out of bounds.
     pub fn set_bit(&mut self, index: usize, value: bool) {
-        if index >= self.bit_count {
-            panic!("Bit index out of bounds: the len is {} but the index is {}", self.bit_count, index);
+        if index >= self.get_bit_count() {
+            panic!("Bit index out of bounds: the len is {} but the index is {}", self.get_bit_count(), index);
         }
-        let byte_index = index / 8;
-        let bit_in_byte_index = 7 - (index % 8); // MSB-first
+        let long_index = index / 64;
+        let bit_in_long_index = 63 - (index % 64); // MSB-first
         if value {
-            self.values[byte_index] |= 1 << bit_in_byte_index;
+            self.values[long_index] |= 1 << bit_in_long_index;
         } else {
-            self.values[byte_index] &= !(1 << bit_in_byte_index);
+            self.values[long_index] &= !(1 << bit_in_long_index);
         }
     }
 
     /// Appends a bit to the end of the bit set.
     pub fn push_bit(&mut self, value: bool) {
-        let new_byte_count = (self.bit_count + 1 + 7) / 8;
-        if new_byte_count > self.values.len() {
+        self.bit_count += 1;
+        let new_long_count = (self.bit_count + 63) / 64;
+        if new_long_count > self.values.len() {
             self.values.push(0);
         }
-        self.bit_count += 1;
         self.set_bit(self.bit_count - 1, value);
     }
 
@@ -2609,8 +2675,8 @@ impl BitSet {
         }
         let value = self.get_bit(self.bit_count - 1);
         self.bit_count -= 1;
-        let new_byte_count = (self.bit_count + 7) / 8;
-        self.values.truncate(new_byte_count);
+        let new_long_count = (self.bit_count + 63) / 64;
+        self.values.truncate(new_long_count);
         Some(value)
     }
 
@@ -2631,12 +2697,12 @@ impl BitSet {
     }
 
     pub fn len_bytes(&self) -> usize {
-        self.values.len()
+        self.values.len() * 8
     }
 }
 
 impl Deref for BitSet {
-    type Target = Vec<u8>;
+    type Target = Vec<i64>;
 
     fn deref(&self) -> &Self::Target {
         &self.values
@@ -2645,22 +2711,47 @@ impl Deref for BitSet {
 
 impl PacketReadable for BitSet {
     fn read(stream: &mut impl Read) -> Self {
-        let bit_count = VarInt::read(stream).get_value() as usize;
-        let byte_count = (bit_count + 7) / 8;
-        let mut values = vec![0u8; byte_count];
-        stream.read_exact(&mut values).expect(READ_ERROR);
+        let long_count = VarInt::read(stream).get_value() as usize;
+        let bit_count = long_count * 64;
+        let mut values = vec![0i64; long_count];
+        let mut long_data = vec![0u8; long_count * 8];
+        stream.read_exact(&mut long_data).expect(READ_ERROR);
+        for i in 0..long_count {
+            values[i] = i64::from_be_bytes(long_data[i * 8..(i + 1) * 8].try_into().unwrap());
+        }
         Self { values, bit_count }
     }
 }
 
 impl PacketWritable for BitSet {
     fn write(&self, stream: &mut impl Write) {
-        VarInt::new(self.bit_count as i32).write(stream);
-        stream.write_all(&self.values).expect(WRITE_ERROR);
+        let long_count = (self.bit_count + 63) / 64;
+        VarInt::new(long_count as i32).write(stream);
+        let mut long_data = vec![0u8; long_count * 8];
+        for i in 0..self.values.len() {
+            long_data[i * 8..(i + 1) * 8].copy_from_slice(&self.values[i].to_be_bytes());
+        }
+        stream.write_all(&long_data).expect(WRITE_ERROR);
     }
 }
 
 impl PacketSerde for BitSet {}
+
+
+impl<T: PacketSerde> PacketWritable for Box<T> {
+    fn write(&self, stream: &mut impl Write) {
+        self.as_ref().write(stream);
+    }
+}
+
+impl<T: PacketSerde> PacketReadable for Box<T> {
+    fn read(stream: &mut impl Read) -> Self {
+        Box::new(T::read(stream))
+    }
+}
+
+impl<T: PacketSerde> PacketSerde for Box<T> {}
+
 
 // ####### compound types #######
 
@@ -2701,4 +2792,260 @@ pub struct Location {
     pub z: Double,
     pub yaw: Float,
     pub pitch: Float,
+}
+
+
+#[derive(Debug, Clone)]
+pub enum IdSet {
+    Tag(std::string::String),
+    Ids(Vec<i32>),
+}
+
+impl PacketReadable for IdSet {
+    fn read(stream: &mut impl Read) -> Self {
+        let type_ = VarInt::read(stream);
+        match type_.into(){
+            0 => {
+                Self::Tag(String::read(stream).get_value())
+            }
+            length => {
+                let mut ids = Vec::with_capacity(length as usize);
+                for _ in 0..length {
+                    ids.push(VarInt::read(stream).get_value());
+                }
+                Self::Ids(ids)
+            }
+        }
+    }
+}
+
+impl PacketWritable for IdSet {
+    fn write(&self, stream: &mut impl Write) {
+        match self {
+            Self::Tag(tag) => {
+                VarInt::new(0).write(stream);
+                String::from_str(&tag).write(stream);
+            }
+            Self::Ids(ids) => {
+                VarInt::new(ids.len() as i32).write(stream);
+                for id in ids {
+                    VarInt::new(*id).write(stream);
+                }
+            }
+        }
+    }
+}
+
+impl PacketSerde for IdSet {}
+
+
+#[derive(Debug, Clone)]
+pub enum IdOr<T: PacketSerde> {
+    Id(i32),
+    Value(T),
+}
+
+impl<T: PacketSerde> PacketReadable for IdOr<T> {
+    fn read(stream: &mut impl Read) -> Self {
+        let type_ = VarInt::read(stream);
+        match type_.into(){
+            0 => {
+                Self::Value(T::read(stream))
+            }
+            id_plus_one => {
+                Self::Id(id_plus_one - 1)
+            }
+        }
+    }
+}
+
+impl<T: PacketSerde> PacketWritable for IdOr<T> {
+    fn write(&self, stream: &mut impl Write) {
+        match self {
+            Self::Value(value) => {
+                VarInt::new(0).write(stream);
+                value.write(stream);
+            }
+            Self::Id(id) => {
+                VarInt::new(id + 1).write(stream);
+            }
+        }
+    }
+}
+
+impl<T: PacketSerde> PacketSerde for IdOr<T> {}
+
+// based on https://minecraft.wiki/w/Java_Edition_protocol/Slot_data?oldid=2791742
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
+pub enum Rarity {
+    Common,
+    Uncommon,
+    Rare,
+    Epic,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct BlockStateProperty {
+    pub name: String,
+    pub value: Or<String, (String, String)>, // exact value or range (min, max)
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct BlockPredicate {
+    pub blocks: Optional<IdSet>,
+    pub properties: Optional<Array<BlockStateProperty>>,
+    pub nbt: Optional<NBTValue>,
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct AttributeModifier {
+    pub type_id: VarInt,
+    pub unique_id: UUID,
+    pub name: String,
+    pub value: Double,
+    pub operation: VarInt,
+    pub slot: Optional<String>,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PotionEffectDetails {
+    pub amplifier: VarInt,
+    pub duration: VarInt,
+    pub ambient: Boolean,
+    pub show_particles: Boolean,
+    pub show_icon: Boolean,
+    pub hidden_effect: Optional<Box<PotionEffectDetails>>,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PotionEffect {
+    pub type_id: VarInt,
+    pub details: PotionEffectDetails,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct ToolRule {
+    blocks: IdSet,
+    speed: Optional<Float>,
+    correct_drop_for_blocks: Optional<Boolean>,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct BookPageContent {
+    pub raw_content: String,       // The raw text of the page.
+    pub filtered_content: String,  // The content after passing through chat filters. 
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct TrimMaterial {
+    pub asset_name: String,
+    pub ingredient: VarInt,
+    pub item_model_index: Float,  // should be Int, but MC uses Float??
+    pub overrides: Array<(VarInt, String)>, // (Armor Material Type, Overriden Asset Name)
+    pub description: NBTValue,    // Text component NBT
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
+pub enum StructuredComponent {
+    CustomData(NBTValue),
+    MaxStackSize(VarInt),
+    MaxDamage(VarInt),
+    Damage(VarInt),
+    Unbreakable(Boolean),
+    CustomName(NBTValue),
+    ItemName(NBTValue),
+    Lore(Array<NBTValue>),
+    Rarity(Rarity),
+    Enchantments {
+        enchantments: Array<(VarInt, VarInt)>, // (enchantment id, level)
+        show_in_tooltip: Boolean,
+    },
+    CanPlaceOn {
+        block_predicates: Array<BlockPredicate>,
+        show_in_tooltip: Boolean,
+    },
+    CanBreak {
+        block_predicates: Array<BlockPredicate>,
+        show_in_tooltip: Boolean,
+    },
+    AttributeModifiers {
+        modifiers: Array<AttributeModifier>,
+        show_in_tooltip: Boolean,
+    },
+    CustomModelData(VarInt),
+    HasAdditionalTooltip,
+    HideTooltip,
+    RepairCost(VarInt),
+    CreativeSlotLock,
+    EnchantmentGlintOverride(Boolean),
+    IntangibleProjectile,
+    Food {
+        nutrition: VarInt,
+        saturation_modifier: Float,
+        can_always_eat: Boolean,
+        seconds_to_eat: Float,
+        // using_converts_to: Slot,
+        effects: Array<(PotionEffect, Float)>, // (potion effect, probability)
+    },
+    FireResistant,
+    Tool {
+        rules: Array<ToolRule>,
+        default_mining_speed: Float,
+        damage_per_block: VarInt,
+    },
+    StoredEnchantments {
+        enchantments: Array<(VarInt, VarInt)>, // (enchantment id, level)
+        show_in_tooltip: Boolean,
+    },
+    DyedColor {
+        color: Int,
+        show_in_tooltip: Boolean,
+    },
+    MapColor(Int),
+    MapId(VarInt),
+    MapDecorations(NBTValue),
+    MapPostProcessing(VarInt),
+    ChargedProjectiles {
+        //projectiles: Array<Slot>
+    },
+    BundleContents {
+        //projectiles: Array<Slot>
+    },
+    PotionContents {
+        potion_id: Optional<VarInt>,
+        custom_color: Optional<Int>,
+        custom_effects: Array<PotionEffect>,
+    },
+    SuspiciousStewEffects {
+        effects: Array<(VarInt, VarInt)>, // (potion effect id, duration)
+    },
+    WritableBookContent(Array<BookPageContent>),
+    WrittenBookContent {
+        raw_title: String,       // The raw title of the book.
+        filtered_title: String,  // The title after going through chat filters
+        author: String,
+        generation: VarInt,
+        pages: Array<BookPageContent>,
+        resolved: Boolean,       // Whether entity selectors have already been resolved.
+    },
+    Trim {
+        trim_material: IdOr<TrimMaterial>,
+        show_in_tooltip: Boolean,
+    },
+    DebugStickState(NBTValue)    // States of previously interacted blocks. Always a Compound Tag.
+    
+    // TODO: Implement the rest of the variants
+}
+
+
+#[derive(Debug, Clone)]
+pub struct Slot {
+    pub item_count: VarInt,
+    pub item_id: Option<VarInt>,
+    pub num_components_to_add: Option<VarInt>,
+    pub num_components_to_remove: Option<VarInt>,
+
 }
