@@ -18,19 +18,15 @@ impl Packet for BundleDelimiterPacket {
 
 #[derive(MinecraftType, Debug, Clone)]
 pub struct SpawnEntityPacket {
-    pub entity_id: types::VarInt,    // A unique integer ID mostly used in the protocol to identify the entity.
-    pub entity_uuid: types::UUID,    // A unique identifier that is mostly used in persistence and places where the uniqueness matters more.
-    pub entity_type: types::VarInt,  // ID in the minecraft:entity_type registry.
-    pub x: types::Float,             // entity x position
-    pub y: types::Float,             // entity y position
-    pub z: types::Float,             // entity z position
-    pub pitch: types::Angle,         // To get the real pitch, you must divide this by (256.0F / 360.0F)
-    pub yaw: types::Angle,           // To get the real yaw, you must divide this by (256.0F / 360.0F)
-    pub head_yaw: types::Angle,      // Only used by living entities, where the head of the entity may differ from the general body rotation.
-    pub data: types::VarInt,         // Meaning dependent on the value of the Type field, see Object Data for details.
-    pub velocity_x: types::Short,    // Same units as Set Entity Velocity.
-    pub velocity_y: types::Short,    // Same units as Set Entity Velocity.
-    pub velocity_z: types::Short,    // Same units as Set Entity Velocity.
+    pub entity_id: types::VarInt,      // A unique integer ID mostly used in the protocol to identify the entity.
+    pub entity_uuid: types::UUID,      // A unique identifier that is mostly used in persistence and places where the uniqueness matters more.
+    pub entity_type: types::VarInt,    // ID in the minecraft:entity_type registry.
+    pub position: types::FloatVec3,    // entity x y z position encoded as float
+    pub pitch: types::Angle,           // To get the real pitch, you must divide this by (256.0F / 360.0F)
+    pub yaw: types::Angle,             // To get the real yaw, you must divide this by (256.0F / 360.0F)
+    pub head_yaw: types::Angle,        // Only used by living entities, where the head of the entity may differ from the general body rotation.
+    pub data: types::VarInt,           // Meaning dependent on the value of the Type field, see Object Data for details.
+    pub velocity_x: types::ShortVec3,  // entity x y z velocity encoded as float
 }
 
 impl Packet for SpawnEntityPacket {
@@ -41,11 +37,9 @@ impl Packet for SpawnEntityPacket {
 
 #[derive(MinecraftType, Debug, Clone)]
 pub struct SpawnExperienceOrbPacket {
-    pub entity_id: types::VarInt,   // A unique integer ID mostly used in the protocol to identify the entity.
-    pub x: types::Double,           // entity x position
-    pub y: types::Double,           // entity y position
-    pub z: types::Double,           // entity z position
-    pub count: types::Short,        // The amount of experience this orb will reward once collected.
+    pub entity_id: types::VarInt,      // A unique integer ID mostly used in the protocol to identify the entity.
+    pub position: types::DoubleVec3,   // entity x y z position encoded as Double
+    pub count: types::Short,           // The amount of experience this orb will reward once collected.
 }
 
 impl Packet for SpawnExperienceOrbPacket {
@@ -355,19 +349,12 @@ impl Packet for ClientboundPluginMessagePacket {
 
 
 #[derive(MinecraftType, Debug, Clone)]
-pub struct DoublePositon {
-    pub x: types::Double,
-    pub y: types::Double,
-    pub z: types::Double,
-}
-
-#[derive(MinecraftType, Debug, Clone)]
 pub struct DamageEventPacket {
     pub entity_id: types::VarInt,
     pub source_type_id: types::VarInt,
     pub source_cause_id: types::VarInt,
     pub source_direct_id: types::VarInt,
-    pub position: types::Optional<DoublePositon>,
+    pub position: types::Optional<types::DoubleVec3>,
 }
 
 impl Packet for DamageEventPacket {
@@ -401,7 +388,7 @@ impl Packet for DeleteMessagePacket {
 
 #[derive(MinecraftType, Debug, Clone)]
 pub struct DisconnectPacket {
-    pub reason: types::NBTValue,             // an NBT Tag containing a single string
+    pub reason: types::NBTValue,   // an NBT Tag containing a single string
 }
 
 impl Packet for DisconnectPacket {
@@ -465,17 +452,8 @@ impl Packet for PlayerAbilitiesPacket {
 
 
 #[derive(MinecraftType, Debug, Clone)]
-pub struct Location {
-    pub x: types::Double,
-    pub y: types::Double,
-    pub z: types::Double,
-    pub yaw: types::Float,
-    pub pitch: types::Float,
-}
-
-#[derive(MinecraftType, Debug, Clone)]
 pub struct SyncPlayerPositionPacket {
-    pub location: Location,            // contains the location of a player
+    pub location: types::Location,            // contains the location of a player
     pub flags: types::Byte,            // When the value of the this byte masked is zero the field is absolute, otherwise relative.
     pub teleport_id: types::VarInt,    // VarInt: the client should respond with the same id
 }

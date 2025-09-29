@@ -1,5 +1,6 @@
 use cesu8;
 use flate2::bufread::GzDecoder;
+use minecraft_type_derive::MinecraftType;
 use regex::Regex;
 
 use std::f32::consts::PI;
@@ -2660,3 +2661,44 @@ impl PacketWritable for BitSet {
 }
 
 impl MinecraftType for BitSet {}
+
+// ####### compound types #######
+
+#[derive(MinecraftType, Clone, Debug)]
+pub struct ByteVec3 {
+    pub x: Byte,
+    pub y: Byte,
+    pub z: Byte
+}
+
+
+#[derive(MinecraftType, Clone, Debug)]
+pub struct ShortVec3 {
+    pub x: Short,
+    pub y: Short,
+    pub z: Short
+}
+
+
+#[derive(MinecraftType, Clone, Debug)]
+pub struct FloatVec3 {
+    pub x: Float,
+    pub y: Float,
+    pub z: Float
+}
+
+#[derive(MinecraftType, Clone, Debug)]
+pub struct DoubleVec3 {
+    pub x: Double,
+    pub y: Double,
+    pub z: Double
+}
+
+#[derive(MinecraftType, Debug, Clone)]
+pub struct Location {
+    pub x: Double,
+    pub y: Double,
+    pub z: Double,
+    pub yaw: Float,
+    pub pitch: Float,
+}
