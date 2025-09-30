@@ -3,7 +3,7 @@ use serde::de;
 
 use crate::minecraft::{
     packet::{ConnectionState, Packet, PacketReadable, PacketSerde, PacketWritable},
-    types::{self, Array},
+    types::{self, Array, NBTValue},
 };
 
 
@@ -257,20 +257,19 @@ impl Packet for CloseContainerPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-/*
+
 #[derive(PacketSerde, Debug, Clone)]
 pub struct SetContainerContentPacket {
     pub window_id: types::UnsignedByte,
     pub state_id: types::VarInt,
-    pub slots: types::Array<Slot> // TODO implement Slot
-
+    pub slots: types::Array<types::Slot>,
+    pub carriedi_item: types::Slot  // Item being dragged with the mouse.
 }
 
 impl Packet for SetContainerContentPacket {
     const ID: i32 = 0x13;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-*/
 
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -285,21 +284,20 @@ impl Packet for SetContainerPropertyPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-/*
+
 #[derive(PacketSerde, Debug, Clone)]
 pub struct SetContainerSlotPacket {
     pub window_id: types::UnsignedByte,
     pub state_id: types::VarInt,
-    pub slot: types::Short,
-    pub slot_data: Slot // TODO implement Slot
-
+    pub slot: types::Short,  // The slot that should be updated.
+    pub slot_data: types::Slot
 }
 
 impl Packet for SetContainerSlotPacket {
     const ID: i32 = 0x15;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-*/
+
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct CookieRequestPacket {
@@ -434,11 +432,6 @@ pub enum VibrationPositionSourceEnum {
     }
 }
 
-/*
-TODO: this packet cannot be seralized because of the following types that are not implemented yet
- - Slot
- - SoundEvent
- - IdOr<T>
 
 #[derive(PacketSerde, Debug, Clone)]
 pub enum ParticleEnum {
@@ -510,7 +503,7 @@ pub enum ParticleEnum {
     Heart,
     InstantEffect,
     Item {
-        item: Slot  // The item that will be used.
+        item: types::Slot  // The item that will be used.
     },
     Vibration {
         position_source: VibrationPositionSourceEnum,  // the vibration source
@@ -605,7 +598,7 @@ impl Packet for ExplosionPacket {
     const ID: i32 = 0x20;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-*/
+
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct UnloadChunkPacket {
@@ -732,9 +725,6 @@ impl Packet for WorldEventPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-/*
-TODO: this packet cannot be seralized because of the following types that are not implemented yet
- - Slot
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct ParticlePacket {
@@ -743,7 +733,7 @@ pub struct ParticlePacket {
     pub offset: types::FloatVec3,       // This is added to the X position after being multiplied by random.nextGaussian().
     pub max_speed: types::Float,
     pub particle_count: types::Int,     // The number of particles to create.
-    pub disable_relative_volume: types::Boolean
+    pub disable_relative_volume: types::Boolean,
     pub particle: ParticleEnum,
 }
 
@@ -751,7 +741,7 @@ impl Packet for ParticlePacket {
     const ID: i32 = 0x29;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-*/
+
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct UpdateLightPacket {
@@ -873,6 +863,194 @@ impl Packet for MapDataPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
+#[derive(PacketSerde, Debug, Clone)]
+pub struct TradeItem {
+    pub item_id: types::VarInt,
+    pub item_count: types::VarInt,
+    pub components: types::Array<types::StructuredComponent>,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct MerchantTrade {
+    // The first item the player has to supply for this villager trade.
+    // The count of the item stack is the default "price" of this trade.
+    pub input_item_1: TradeItem,
+    // The item the player will receive from this villager trade.
+    pub output_item: types::Slot,
+    // The second item the player has to supply for this villager trade. May be an empty slot.
+    pub input_item_2: TradeItem,
+    // True if the trade is disabled; false if the trade is enabled.
+    pub trade_disabled: types::Boolean,
+    // Number of times the trade has been used so far. If equal to the maximum number of trades,
+    // the client will display a red X.
+    pub num_uses: types::Int,
+    // Number of times this trade can be used before it's exhausted.
+    pub max_num_uses: types::Int,
+    // Amount of XP the villager will earn each time the trade is used.
+    pub xp: types::Int,
+    // Can be zero or negative. The number is added to the price when an item is discounted due
+    // to player reputation or other effects.
+    pub special_price: types::Int,
+    // Can be low (0.05) or high (0.2). Determines how much demand, player reputation, and
+    // temporary effects will adjust the price.
+    pub price_multiplier: types::Float,
+    // If positive, causes the price to increase. Negative values seem to be treated the same as zero.
+    pub demand: types::Int,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum MerchantLevel {
+    Novice,
+    Apprentice,
+    Journeyman,
+    Expert,
+    Master,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct MerchantOffersPacket {
+    pub window_id: types::VarInt,      // The ID of the window that is open; this is an int rather than a byte.
+    pub trades: types::Array<MerchantTrade>,
+    pub merchant_level: MerchantLevel, // Appears on the trade GUI
+    pub experience: types::VarInt,     // Total experience for this villager (always 0 for the wandering trader).
+    // True if this is a regular villager; false for the wandering trader. When false, hides
+    // the villager level and some other GUI elements.
+    pub is_regular_merchant: types::Boolean,  
+    // True for regular villagers and false for the wandering trader. If true, the "Villagers
+    // restock up to two times per day." message is displayed when hovering over disabled trades.
+    pub can_restock: types::Boolean,
+}
+
+impl Packet for MerchantOffersPacket {
+    const ID: i32 = 0x2D;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct UpdateEntityPositionPacket {
+    pub entity_id: types::VarInt,   // A unique integer ID mostly used in the protocol to identify the entity.
+    pub delta: types::ShortVec3,    // Change in X position as `current * 4096 - prev * 4096`
+    pub on_ground: types::Boolean,  // Whether the entity is on the ground.
+}
+
+impl Packet for UpdateEntityPositionPacket {
+    const ID: i32 = 0x2E;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct UpdateEntityPositionAndRotationPacket {
+    pub entity_id: types::VarInt,   // A unique integer ID mostly used in the protocol to identify the entity.
+    pub delta: types::ShortVec3,    // Change in X position as `current * 4096 - prev * 4096`
+    pub yaw: types::Angle,
+    pub pitch: types::Angle,
+    pub on_ground: types::Boolean,  // Whether the entity is on the ground.
+}
+
+impl Packet for UpdateEntityPositionAndRotationPacket {
+    const ID: i32 = 0x2F;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct UpdateEntityRotationPacket {
+    pub entity_id: types::VarInt,   // A unique integer ID mostly used in the protocol to identify the entity.
+    pub yaw: types::Angle,
+    pub pitch: types::Angle,
+    pub on_ground: types::Boolean,  // Whether the entity is on the ground.
+}
+
+impl Packet for UpdateEntityRotationPacket {
+    const ID: i32 = 0x30;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct MoveVehiclePacket {
+    pub position: types::DoubleVec3,
+    pub yaw: types::Float,
+    pub pitch: types::Float,
+}
+
+impl Packet for MoveVehiclePacket {
+    const ID: i32 = 0x31;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct OpenBookPacket {
+    pub hand: types::VarInt,
+}
+
+impl Packet for OpenBookPacket {
+    const ID: i32 = 0x32;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct OpenScreenPacket {
+    pub window_id: types::VarInt,
+    pub window_type: types::VarInt,
+    pub window_title: types::NBTValue, // Text Component
+}
+
+impl Packet for OpenScreenPacket {
+    const ID: i32 = 0x33;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct OpenSignEditorPacket {
+    pub location: types::Position,
+    pub is_front_text: types::Boolean,
+}
+
+impl Packet for OpenSignEditorPacket {
+    const ID: i32 = 0x34;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PingPacket {
+    pub id: types::Int,
+}
+
+impl Packet for PingPacket {
+    const ID: i32 = 0x35;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PingResponsePacket {
+    pub payload: types::Long,
+}
+
+impl Packet for PingResponsePacket {
+    const ID: i32 = 0x36;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PlaceGhostRecipePacket {
+    pub window_id: types::VarInt,
+    pub recipe: types::Identifier,
+}
+
+impl Packet for PlaceGhostRecipePacket {
+    const ID: i32 = 0x37;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct PlayerAbilitiesPacket {
@@ -883,6 +1061,80 @@ pub struct PlayerAbilitiesPacket {
 
 impl Packet for PlayerAbilitiesPacket {
     const ID: i32 = 0x38;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum FilterType {
+    PassThrough,
+    FullyFiltered,
+    // Specifies the indexes at which characters in the original message string should be replaced
+    // with the # symbol (i.e. filtered) by the Notchian client
+    PartiallyFiltered(types::BitSet),
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PlayerChatMessagePacket {
+    pub sender: types::UUID,
+    pub index: types::VarInt,
+    pub message_signature: types::Optional<types::FixedSizeByteArray<256>>,
+    pub message: types::String,
+    pub timestamp: types::Long,
+    pub salt: types::Long,
+    pub previous_messages: types::Array<types::IdOr<types::FixedSizeByteArray<256>>>,
+    pub unsigned_content: NBTValue,
+    pub filter_type: FilterType,
+    pub chat_type: types::VarInt,
+    pub sender_name: types::NBTValue,
+    pub target_name: types::Optional<types::NBTValue>
+}
+
+impl Packet for PlayerChatMessagePacket {
+    const ID: i32 = 0x39;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct EndCombatPacket {
+    pub duration: types::VarInt,  // Length of the combat in ticks.
+}
+
+impl Packet for EndCombatPacket {
+    const ID: i32 = 0x3A;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct EnterCombatPacket;
+
+impl Packet for EnterCombatPacket {
+    const ID: i32 = 0x3B;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct CombatDeathPacket {
+    pub player_id: types::VarInt,  // Entity ID of the player that died (should match the client's entity ID).
+    pub message: types::NBTValue,
+}
+
+impl Packet for CombatDeathPacket {
+    const ID: i32 = 0x3C;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PlayerInfoRemovePacket {
+    pub players: types::Array<types::UUID>,  // UUIDs of players to remove from the player list.
+}
+
+impl Packet for PlayerInfoRemovePacket {
+    const ID: i32 = 0x3D;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
