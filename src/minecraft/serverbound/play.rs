@@ -197,11 +197,11 @@ impl Packet for ClickContainerButtonPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-/*
+
 #[derive(PacketSerde, Clone, Debug)]
 pub struct ChangedSlot {
     pub slot_number: types::Byte,
-    pub slot: Slot,               // New data for this slot, in the client's opinion.
+    pub slot: types::Slot,               // New data for this slot, in the client's opinion.
 }
 
 #[derive(PacketSerde, Clone, Debug)]
@@ -214,14 +214,14 @@ pub struct ClickContainerPacket {
     pub button: types::Byte,    // The button used in the click
     pub mode: types::VarInt,
     pub changed_slots: types::Array<ChangedSlot>, // Maximum length for Notchian server is 128 slots.
-    pub carried_item: Slot,     // Item carried by the cursor. Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
+    pub carried_item: types::Slot,     // Item carried by the cursor. Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
 }
 
 impl Packet for ClickContainerPacket {
     const ID: i32 = 0x0E;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-*/
+
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct CloseContainerPacket {
@@ -660,18 +660,18 @@ impl Packet for ProgramCommandBlockMinecartPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-/*
+
 #[derive(PacketSerde, Clone, Debug)]
 pub struct SetCreativeModeSlotPacket {
     pub slot: types::Short,
-    pub clicked_item: Slot,
+    pub clicked_item: types::Slot,
 }
 
 impl Packet for SetCreativeModeSlotPacket {
     const ID: i32 = 0x32;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-*/
+
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct ProgramJigsawBlockPacket {
