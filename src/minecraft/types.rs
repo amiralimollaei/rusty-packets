@@ -2948,6 +2948,83 @@ pub struct TrimMaterial {
 }
 
 #[derive(PacketSerde, Debug, Clone)]
+pub struct SoundEvent {
+    pub sound_name: Identifier,
+    pub fixed_range: Optional<Float>
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct Instrument {
+    pub sound_event: IdOr<SoundEvent>,
+    pub use_duration: VarInt,
+    pub range: Float,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct JukeboxSong {
+    pub sound_event: IdOr<SoundEvent>,
+    pub description: NBTValue,
+    pub duration: Float,
+    pub output: VarInt,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct GlobalPosition {
+    pub dimension: Identifier,
+    pub position: Position
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct FireworkExplosion {
+    pub shape: VarInt,
+    pub colors: Array<Int>,
+    pub fade_colors: Array<Int>,
+    pub has_trail: Boolean,
+    pub has_twinkle: Boolean
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct Property {
+    pub name: String,
+    pub value: String,
+    pub signature: Optional<String>
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
+pub enum DyeColor {
+    White,
+    Orange,
+    Magenta,
+    LightBlue,
+    Yellow,
+    Lime,
+    Pink,
+    Gray,
+    LightGray,
+    Cyan,
+    Purple,
+    Blue,
+    Brown,
+    Green,
+    Red,
+    Black
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct BannerPatternLayer {
+    pub pattern_type: IdOr<(Identifier, String)>,  // (Asset ID, Translation Key)
+    pub color: DyeColor,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct HiveResidentBee {
+    pub entity_data: NBTValue,  // always a Compound Tag. Same structure as the minecraft:custom_data component.
+    pub ticks_in_hive: VarInt,
+    pub min_ticks_in_hive: VarInt,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
 #[discriminant_type(VarInt)]
 pub enum StructuredComponent {
     CustomData(NBTValue),
@@ -2987,7 +3064,7 @@ pub enum StructuredComponent {
         saturation_modifier: Float,
         can_always_eat: Boolean,
         seconds_to_eat: Float,
-        // using_converts_to: Slot,
+        using_converts_to: Slot,
         effects: Array<(PotionEffect, Float)>, // (potion effect, probability)
     },
     FireResistant,
@@ -3009,10 +3086,10 @@ pub enum StructuredComponent {
     MapDecorations(NBTValue),
     MapPostProcessing(VarInt),
     ChargedProjectiles {
-        //projectiles: Array<Slot>
+        projectiles: Array<Slot>
     },
     BundleContents {
-        //projectiles: Array<Slot>
+        projectiles: Array<Slot>
     },
     PotionContents {
         potion_id: Optional<VarInt>,
@@ -3035,17 +3112,105 @@ pub enum StructuredComponent {
         trim_material: IdOr<TrimMaterial>,
         show_in_tooltip: Boolean,
     },
-    DebugStickState(NBTValue)    // States of previously interacted blocks. Always a Compound Tag.
-    
-    // TODO: Implement the rest of the variants
+    DebugStickState(NBTValue),    // States of previously interacted blocks. Always a Compound Tag.
+    EntityData(NBTValue),  // Always a Compound Tag.
+    BucketEntityData(NBTValue),  // Always a Compound Tag.
+    BlockEntityData(NBTValue),  // Always a Compound Tag.
+    Instrument(IdOr<Instrument>),
+    OminousBottleAmplifier(VarInt),
+    JukeboxPlayable{
+        jukebox_song: Or<IdOr<JukeboxSong>, Identifier>,
+        show_in_tooltip: Boolean,
+    },
+    Recipes(NBTValue),  // Always a Compound Tag.
+    LodestoneTracker {
+        global_position: Optional<GlobalPosition>,
+        tracked: Boolean
+    },
+    FireworkExplosion(FireworkExplosion),
+    Fireworks {
+        flight_duration: VarInt,
+        explosions: Array<FireworkExplosion>
+    },
+    Profile {
+        name: Optional<String>,
+        unique_id: Optional<UUID>,
+        properties: Array<Property>
+    },
+    NoteBlockSound(Identifier),
+    BannerPatterns(Array<BannerPatternLayer>),
+    BaseColor(DyeColor),
+    PotDecorations(Array<VarInt>),
+    Container {
+        items: Array<Slot>
+    },
+    BlockState(Array<(String, String)>),
+    Bees(Array<HiveResidentBee>),
+    Lock(NBTValue),  // Always a String Tag.
+    ContainerLoot(NBTValue)  // Always a Compound Tag.
 }
 
 
 #[derive(Debug, Clone)]
 pub struct Slot {
-    pub item_count: VarInt,
-    pub item_id: Option<VarInt>,
-    pub num_components_to_add: Option<VarInt>,
-    pub num_components_to_remove: Option<VarInt>,
-
+    pub item_count: i32,
+    pub item_id: i32,
+    pub components_to_add: Vec<StructuredComponent>,
+    pub components_to_remove: Vec<StructuredComponent>,
 }
+
+impl Slot {
+    fn new_empty() -> Self {
+        Self {
+            item_count: 0,
+            item_id: 0,
+            components_to_add: Vec::new(),
+            components_to_remove: Vec::new()
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.item_count == 0
+    }
+}
+
+impl PacketReadable for Slot {
+    fn read(stream: &mut impl Read) -> Self {
+        let item_count = VarInt::read(stream).get_value();
+        if item_count == 0 {
+            return Self::new_empty();
+        }
+        let item_id = VarInt::read(stream).get_value();
+        let num_components_to_add = VarInt::read(stream).get_value() as usize;
+        let num_components_to_remove = VarInt::read(stream).get_value() as usize;
+        let mut components_to_add = Vec::with_capacity(num_components_to_add);
+        let mut components_to_remove = Vec::with_capacity(num_components_to_remove);
+        for _ in 0..num_components_to_add {
+            components_to_add.push(StructuredComponent::read(stream));
+        }
+        for _ in 0..num_components_to_remove {
+            components_to_remove.push(StructuredComponent::read(stream));
+        }
+        Self { item_count, item_id, components_to_add, components_to_remove }
+    }
+}
+
+impl PacketWritable for Slot {
+    fn write(&self, stream: &mut impl Write) {
+        VarInt::new(self.item_count).write(stream);
+        if self.item_count == 0 {
+            return;
+        }
+        VarInt::new(self.item_id).write(stream);
+        VarInt::new(self.components_to_add.len() as i32).write(stream);
+        VarInt::new(self.components_to_remove.len() as i32).write(stream);
+        for component in &self.components_to_add {
+            component.write(stream);
+        }
+        for component in &self.components_to_remove {
+            component.write(stream);
+        }
+    }
+}
+
+impl PacketSerde for Slot {}
