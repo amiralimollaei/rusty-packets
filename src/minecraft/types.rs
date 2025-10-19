@@ -2779,6 +2779,14 @@ pub struct FloatVec3 {
 }
 
 #[derive(PacketSerde, Clone, Debug)]
+pub struct FloatVec4 {
+    pub x: Float,
+    pub y: Float,
+    pub z: Float,
+    pub w: Float
+}
+
+#[derive(PacketSerde, Clone, Debug)]
 pub struct DoubleVec3 {
     pub x: Double,
     pub y: Double,
@@ -2874,6 +2882,42 @@ impl<T: PacketSerde> PacketWritable for IdOr<T> {
 }
 
 impl<T: PacketSerde> PacketSerde for IdOr<T> {}
+
+
+#[derive(Debug, Clone)]
+pub enum OptionalVarInt {
+    None,
+    Value(i32),
+}
+
+impl PacketReadable for OptionalVarInt {
+    fn read(stream: &mut impl Read) -> Self {
+        let value = VarInt::read(stream);
+        match value.into(){
+            0 => {
+                Self::None
+            }
+            value_plus_one => {
+                Self::Value(value_plus_one - 1)
+            }
+        }
+    }
+}
+
+impl PacketWritable for OptionalVarInt {
+    fn write(&self, stream: &mut impl Write) {
+        match self {
+            Self::None => {
+                VarInt::new(0).write(stream);
+            }
+            Self::Value(value) => {
+                VarInt::new(value + 1).write(stream);
+            }
+        }
+    }
+}
+
+impl PacketSerde for OptionalVarInt {}
 
 // based on https://minecraft.wiki/w/Java_Edition_protocol/Slot_data?oldid=2791742
 #[derive(PacketSerde, Debug, Clone)]
@@ -3214,3 +3258,209 @@ impl PacketWritable for Slot {
 }
 
 impl PacketSerde for Slot {}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SingedProperty {
+    pub name: String,
+    pub value: String,
+    pub signature: Optional<String>,
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
+pub enum VibrationPositionSourceEnum {
+    Block {
+        position: Position  // The position of the block the vibration originated from.
+    },
+    Entity {
+        id: VarInt,        // The ID of the entity the vibration originated from. 
+        eye_height: Float  // The height of the entity's eye relative to the entity. 
+    }
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
+pub enum ParticleEnum {
+    AngryVillager,
+    Block {
+        block_state: VarInt  // The ID of the block state.
+    },
+    BlockMarker {
+        block_state: VarInt  // The ID of the block state.
+    },
+    Bubble,
+    Cloud,
+    Crit,
+    DamageIndicator,
+    DragonBreath,
+    DrippingLava,
+    FallingLava,
+    LandingLava,
+    DrippingWater,
+    FallingWater,
+    Dust {
+        red: Float,    // The red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        green: Float,  // The green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        blue: Float,   // The blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        scale: Float,  // The scale, will be clamped between 0.01 and 4.
+    },
+    DustColorTransition {
+        from_red: Float,    // The start red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        from_green: Float,  // The start green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        from_blue: Float,   // The start blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_red: Float,      // The end red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_green: Float,    // The end green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_blue: Float,     // The end blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        scale: Float,       // The scale, will be clamped between 0.01 and 4.
+    },
+    Effect,
+    ElderGuardian,
+    EnchantedHit,
+    Enchant,
+    EndRod,
+    EntityEffect {
+        color: Int,  // The ARGB components of the color encoded as an Int
+    },
+    ExplotionEmitter,
+    Explosion,
+    Gust,
+    SmallGust,
+    GustEmitterLarge,
+    GustEmitterSmall,
+    SonicBoom,
+    FallingDust {
+        block_state: VarInt  // The ID of the block state.
+    },
+    Firework,
+    Fishing,
+    Flame,
+    Infested,
+    CherryLeaves,
+    SculkSoul,
+    SculkCharge {
+        roll: Float  // How much the particle will be rotated when displayed.
+    },
+    SculkChargePop,
+    SoulFireFlame,
+    Soul,
+    Flash,
+    HappyVillager,
+    Composter,
+    Heart,
+    InstantEffect,
+    Item {
+        item: Slot  // The item that will be used.
+    },
+    Vibration {
+        position_source: VibrationPositionSourceEnum,  // the vibration source
+        ticks: VarInt  // The amount of ticks it takes for the vibration to travel from its source to its destination.
+    },
+    ItemSlime,
+    ItemCobweb,
+    ItemSnowball,
+    LargeSmoke,
+    Lava,
+    Mycelium,
+    Note,
+    Poof,
+    Portal,
+    Rain,
+    Smoke,
+    WhiteSmoke,
+    Sneeze,
+    Spit,
+    SquidInk,
+    SweepAttack,
+    TotemOfUndying,
+    Underwater,
+    Splash,
+    Witch,
+    BubblePop,
+    CurrentDown,
+    BubbleColumnUp,
+    Nautilus,
+    Dolphin,
+    CampfireCosySmoke,
+    CampfireSignalSmoke,
+    DrippingHoney,
+    FallingHoney,
+    LandingHoney,
+    FallingNectar,
+    FallingSporeBlossom,
+    Ash,
+    CrimsonSpore,
+    WarpedSpore,
+    SporeBlossomAir,
+    DrippingObsidianTear,
+    FallingObsidianTear,
+    LandingObsidianTear,
+    ReversePortal,
+    WhiteAsh,
+    SmallFlame,
+    SnowFlake,
+    DrippingDripstoneLava,
+    FallingDripstoneLava,
+    DrippingDripstoneWater,
+    FallingDripstoneWater,
+    GlowSquidInk,
+    Glow,
+    WaxOn,
+    WaxOff,
+    ElectricSpark,
+    Scrape,
+    Shriek {
+        delay: VarInt // The time in ticks before the particle is displayed
+    },
+    EggCrack,
+    DustPlume,
+    TrialSpawnerDetection,
+    TrialSpawnerDetectionOminous,
+    VaultConnection,
+    DustPillar {
+        block_state: VarInt  // The ID of the block state.
+    },
+    OminousSpawning,
+    RaidOmen,
+    TrialOmen,
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
+pub enum EntityPose {
+    Standing,
+    FallFlying,
+    Sleeping,
+    Swimming,
+    SpinAttack,
+    Sneaking,
+    LongJumping,
+    Dying,
+    Croaking,
+    UsingTongue,
+    Sitting,
+    Roaring,
+    Sniffing,
+    Emerging,
+    Digging
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct WolfVariant {
+    pub wild_texture: Identifier,
+    pub tame_texture: Identifier,
+    pub angry_texture: Identifier,
+    pub biomes: IdSet
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PaintingVariant {
+    pub width: Int,
+    pub height: Int,
+    pub asset_id: Identifier,
+    pub title: Optional<NBTValue>,
+    pub author: Optional<NBTValue>
+}

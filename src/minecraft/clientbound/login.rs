@@ -32,17 +32,10 @@ impl Packet for EncryptionRequestPacket {
 
 
 #[derive(PacketSerde, Debug, Clone)]
-pub struct LoginProperty {
-    pub name: types::String,
-    pub value: types::String,
-    pub signature: types::Optional<types::String>,
-}
-
-#[derive(PacketSerde, Debug, Clone)]
 pub struct LoginSuccessPacket {
     pub uuid: types::UUID,
     pub username: types::String,
-    pub properties: types::Array<LoginProperty>,
+    pub properties: types::Array<types::SingedProperty>,
 }
 
 impl Packet for LoginSuccessPacket {

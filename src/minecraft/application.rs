@@ -394,7 +394,7 @@ impl Client {
 
     pub fn execute_synchronize_player_position_packet(
         &mut self,
-        packet: &clientbound::play::SyncPlayerPositionPacket,
+        packet: &clientbound::play::SynchronizePlayerPositionPacket,
     ) {
         let flags_byte: i8 = packet.flags.into();
         self.location.x = if (flags_byte & 0x01) == 0 {
@@ -426,8 +426,8 @@ impl Client {
 
     fn process_play_packet(&mut self, raw_packet: PacketContainer, stream: &mut TcpStream) {
         match raw_packet.get_id() {
-            clientbound::play::SyncPlayerPositionPacket::ID => {
-                let packet = clientbound::play::SyncPlayerPositionPacket::from_packet(raw_packet);
+            clientbound::play::SynchronizePlayerPositionPacket::ID => {
+                let packet = clientbound::play::SynchronizePlayerPositionPacket::from_packet(raw_packet);
                 self.execute_synchronize_player_position_packet(&packet);
                 get_logger().info(format!("Teleported by server: {:?}", self.location));
                 // send teleport confirmation packet

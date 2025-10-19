@@ -1,9 +1,7 @@
 use packet_serde_derive::PacketSerde;
-use serde::de;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketReadable, PacketSerde, PacketWritable},
-    types::{self, Array, NBTValue},
+    packet::{ConnectionState, Packet, PacketReadable, PacketSerde, PacketWritable}, types
 };
 
 
@@ -420,165 +418,6 @@ impl Packet for EntityEventPacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-
-#[derive(PacketSerde, Debug, Clone)]
-pub enum VibrationPositionSourceEnum {
-    Block {
-        position: types::Position  // The position of the block the vibration originated from.
-    },
-    Entity {
-        id: types::VarInt,        // The ID of the entity the vibration originated from. 
-        eye_height: types::Float  // The height of the entity's eye relative to the entity. 
-    }
-}
-
-
-#[derive(PacketSerde, Debug, Clone)]
-pub enum ParticleEnum {
-    AngryVillager,
-    Block {
-        block_state: types::VarInt  // The ID of the block state.
-    },
-    BlockMarker {
-        block_state: types::VarInt  // The ID of the block state.
-    },
-    Bubble,
-    Cloud,
-    Crit,
-    DamageIndicator,
-    DragonBreath,
-    DrippingLava,
-    FallingLava,
-    LandingLava,
-    DrippingWater,
-    FallingWater,
-    Dust {
-        red: types::Float,    // The red RGB value, between 0 and 1. Divide actual RGB value by 255.
-        green: types::Float,  // The green RGB value, between 0 and 1. Divide actual RGB value by 255.
-        blue: types::Float,   // The blue RGB value, between 0 and 1. Divide actual RGB value by 255.
-        scale: types::Float,  // The scale, will be clamped between 0.01 and 4.
-    },
-    DustColorTransition {
-        from_red: types::Float,    // The start red RGB value, between 0 and 1. Divide actual RGB value by 255.
-        from_green: types::Float,  // The start green RGB value, between 0 and 1. Divide actual RGB value by 255.
-        from_blue: types::Float,   // The start blue RGB value, between 0 and 1. Divide actual RGB value by 255.
-        to_red: types::Float,      // The end red RGB value, between 0 and 1. Divide actual RGB value by 255.
-        to_green: types::Float,    // The end green RGB value, between 0 and 1. Divide actual RGB value by 255.
-        to_blue: types::Float,     // The end blue RGB value, between 0 and 1. Divide actual RGB value by 255.
-        scale: types::Float,       // The scale, will be clamped between 0.01 and 4.
-    },
-    Effect,
-    ElderGuardian,
-    EnchantedHit,
-    Enchant,
-    EndRod,
-    EntityEffect {
-        color: types::Int,  // The ARGB components of the color encoded as an Int
-    },
-    ExplotionEmitter,
-    Explosion,
-    Gust,
-    SmallGust,
-    GustEmitterLarge,
-    GustEmitterSmall,
-    SonicBoom,
-    FallingDust {
-        block_state: types::VarInt  // The ID of the block state.
-    },
-    Firework,
-    Fishing,
-    Flame,
-    Infested,
-    CherryLeaves,
-    SculkSoul,
-    SculkCharge {
-        roll: types::Float  // How much the particle will be rotated when displayed.
-    },
-    SculkChargePop,
-    SoulFireFlame,
-    Soul,
-    Flash,
-    HappyVillager,
-    Composter,
-    Heart,
-    InstantEffect,
-    Item {
-        item: types::Slot  // The item that will be used.
-    },
-    Vibration {
-        position_source: VibrationPositionSourceEnum,  // the vibration source
-        ticks: types::VarInt  // The amount of ticks it takes for the vibration to travel from its source to its destination.
-    },
-    ItemSlime,
-    ItemCobweb,
-    ItemSnowball,
-    LargeSmoke,
-    Lava,
-    Mycelium,
-    Note,
-    Poof,
-    Portal,
-    Rain,
-    Smoke,
-    WhiteSmoke,
-    Sneeze,
-    Spit,
-    SquidInk,
-    SweepAttack,
-    TotemOfUndying,
-    Underwater,
-    Splash,
-    Witch,
-    BubblePop,
-    CurrentDown,
-    BubbleColumnUp,
-    Nautilus,
-    Dolphin,
-    CampfireCosySmoke,
-    CampfireSignalSmoke,
-    DrippingHoney,
-    FallingHoney,
-    LandingHoney,
-    FallingNectar,
-    FallingSporeBlossom,
-    Ash,
-    CrimsonSpore,
-    WarpedSpore,
-    SporeBlossomAir,
-    DrippingObsidianTear,
-    FallingObsidianTear,
-    LandingObsidianTear,
-    ReversePortal,
-    WhiteAsh,
-    SmallFlame,
-    SnowFlake,
-    DrippingDripstoneLava,
-    FallingDripstoneLava,
-    DrippingDripstoneWater,
-    FallingDripstoneWater,
-    GlowSquidInk,
-    Glow,
-    WaxOn,
-    WaxOff,
-    ElectricSpark,
-    Scrape,
-    Shriek {
-        delay: types::VarInt // The time in ticks before the particle is displayed
-    },
-    EggCrack,
-    DustPlume,
-    TrialSpawnerDetection,
-    TrialSpawnerDetectionOminous,
-    VaultConnection,
-    DustPillar {
-        block_state: types::VarInt  // The ID of the block state.
-    },
-    OminousSpawning,
-    RaidOmen,
-    TrialOmen,
-}
-
-
 #[derive(PacketSerde, Debug, Clone)]
 pub struct ExplosionPacket {
     pub position: types::DoubleVec3,
@@ -589,8 +428,8 @@ pub struct ExplosionPacket {
     pub records: types::Array<types::ByteVec3>,
     pub player_motion: types::FloatVec3, // velocity of the player being pushed by the explosion.
     pub block_interaction: types::VarInt,
-    pub small_explosion_particle: ParticleEnum,
-    pub large_explosion_particle: ParticleEnum,
+    pub small_explosion_particle: types::ParticleEnum,
+    pub large_explosion_particle: types::ParticleEnum,
     pub explotion_sound: types::IdOr<types::SoundEvent>,
 }
 
@@ -734,7 +573,7 @@ pub struct ParticlePacket {
     pub max_speed: types::Float,
     pub particle_count: types::Int,     // The number of particles to create.
     pub disable_relative_volume: types::Boolean,
-    pub particle: ParticleEnum,
+    pub particle: types::ParticleEnum,
 }
 
 impl Packet for ParticlePacket {
@@ -1083,7 +922,7 @@ pub struct PlayerChatMessagePacket {
     pub timestamp: types::Long,
     pub salt: types::Long,
     pub previous_messages: types::Array<types::IdOr<types::FixedSizeByteArray<256>>>,
-    pub unsigned_content: NBTValue,
+    pub unsigned_content: types::NBTValue,
     pub filter_type: FilterType,
     pub chat_type: types::VarInt,
     pub sender_name: types::NBTValue,
@@ -1140,17 +979,400 @@ impl Packet for PlayerInfoRemovePacket {
 
 
 #[derive(PacketSerde, Debug, Clone)]
-pub struct SyncPlayerPositionPacket {
+pub struct SignatureData {
+    pub session_id: types::UUID,
+    pub expiration_time: types::Long,
+    pub public_key: types::ByteArray,
+    pub public_key_signature: types::ByteArray,
+}
+
+#[derive(Debug, Clone)]
+pub enum PlayerInfoUpdateAction {
+    AddPlayer {
+        name: types::String,
+        properties: types::Array<types::SingedProperty>
+    },
+    InitializeChat {
+        signature_data: types::Optional<SignatureData>
+    },
+    GameMode(types::VarInt),
+    Listed(types::Boolean),
+    Ping(types::VarInt),
+    DisplayName(types::Optional<types::NBTValue>),
+}
+
+#[derive(Debug, Clone)]
+pub struct PlayerInfoUpdatePacket {
+    pub actions_mask: types::Byte,
+    pub player_actions: Vec<(types::UUID, PlayerInfoUpdateAction)>,
+}
+
+impl PacketReadable for PlayerInfoUpdatePacket {
+    fn read(stream: &mut impl std::io::Read) -> Self {
+        let actions_mask = types::Byte::read(stream);
+        let actions_mask_u8 = actions_mask.get_u8();
+        let num_players = types::VarInt::read(stream);
+        let num_players_usize = num_players.get_value() as usize;
+        let mut player_actions = Vec::with_capacity(num_players_usize);
+        for _ in 0..num_players_usize {
+            for shift in 0..6 {
+                let is_action_present = (actions_mask_u8 & (1u8 >> shift)) != 0;
+                if !is_action_present {
+                    continue;
+                }
+                let player_uuid = types::UUID::read(stream);
+                let player_info_update_action = match shift {
+                    0 => {
+                        PlayerInfoUpdateAction::AddPlayer {
+                            name: types::String::read(stream),
+                            properties: types::Array::<types::SingedProperty>::read(stream)
+                        }
+                    }
+                    1 => {
+                        PlayerInfoUpdateAction::InitializeChat { 
+                            signature_data: types::Optional::<SignatureData>::read(stream)
+                        }
+                    }
+                    2 => {
+                        PlayerInfoUpdateAction::GameMode(types::VarInt::read(stream))
+                    }
+                    3 => {
+                        PlayerInfoUpdateAction::Listed(types::Boolean::read(stream))
+                    }
+                    4 => {
+                        PlayerInfoUpdateAction::Ping(types::VarInt::read(stream))
+                    }
+                    5 => {
+                        PlayerInfoUpdateAction::DisplayName(types::Optional::<types::NBTValue>::read(stream))
+                    }
+                    _ => {
+                        panic!()
+                    }
+                };
+                player_actions.push((player_uuid, player_info_update_action));
+            }
+        }
+        Self {
+            actions_mask: actions_mask,
+            player_actions: player_actions
+        }
+    }
+}
+
+impl PacketWritable for PlayerInfoUpdatePacket {
+    fn write(&self, stream: &mut impl std::io::Write) {
+        self.actions_mask.write(stream);
+        types::VarInt::from_i32(self.player_actions.len() as i32).write(stream);
+        for (player_uuid, player_info_update_action) in &self.player_actions {
+            player_uuid.write(stream);
+            match player_info_update_action {
+                PlayerInfoUpdateAction::AddPlayer { name, properties } => {
+                    name.write(stream);
+                    properties.write(stream);
+                },
+                PlayerInfoUpdateAction::InitializeChat { signature_data } => {
+                    signature_data.write(stream);
+                },
+                PlayerInfoUpdateAction::GameMode(var_int) => {
+                    var_int.write(stream);
+                },
+                PlayerInfoUpdateAction::Listed(boolean) => {
+                    boolean.write(stream);
+                },
+                PlayerInfoUpdateAction::Ping(var_int) => {
+                    var_int.write(stream);
+                },
+                PlayerInfoUpdateAction::DisplayName(optional) => {
+                    optional.write(stream);
+                },
+            }
+        }
+    }
+}
+
+impl PacketSerde for PlayerInfoUpdatePacket {}
+
+impl Packet for PlayerInfoUpdatePacket {
+    const ID: i32 = 0x3E;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum LootAtPoint {
+    Feet,
+    Eyes
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct LookAtPacket {
+    pub point: LootAtPoint,
+    pub target: types::DoubleVec3,
+    pub entity: types::Optional<(types::VarInt, LootAtPoint)>
+}
+
+impl Packet for LookAtPacket {
+    const ID: i32 = 0x3F;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SynchronizePlayerPositionPacket {
     pub location: types::Location,            // contains the location of a player
     pub flags: types::Byte,            // When the value of the this byte masked is zero the field is absolute, otherwise relative.
     pub teleport_id: types::VarInt,    // VarInt: the client should respond with the same id
 }
 
-impl Packet for SyncPlayerPositionPacket {
+impl Packet for SynchronizePlayerPositionPacket {
     const ID: i32 = 0x40;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct RecipeBookData {
+    pub crafting_recipe_book_open: types::Boolean,
+    pub crafting_recipe_book_filter_active: types::Boolean,
+    pub smelting_recipe_book_open: types::Boolean,
+    pub smelting_recipe_book_filter_active: types::Boolean,
+    pub blast_furnace_recipe_book_open: types::Boolean,
+    pub blast_furnace_recipe_book_filter_active: types::Boolean,
+    pub smoker_recipe_book_open: types::Boolean,
+    pub smoker_recipe_book_filter_active: types::Boolean,
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum UpdateRecipeBookPacket {
+    Init {
+        recipe_book_data: RecipeBookData,
+        recipe_ids: types::Array<types::Identifier>,
+        init_recipe_ids: types::Array<types::Identifier>
+    },
+    Add {
+        recipe_book_data: RecipeBookData,
+        recipe_ids: types::Array<types::Identifier>,
+    },
+    Remove {
+        recipe_book_data: RecipeBookData,
+        recipe_ids: types::Array<types::Identifier>,
+    }
+}
+
+impl Packet for UpdateRecipeBookPacket {
+    const ID: i32 = 0x41;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct RemoveEntitiesPacket {
+    pub entity_ids: types::Array<types::VarInt>,
+}
+
+impl Packet for RemoveEntitiesPacket {
+    const ID: i32 = 0x42;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct RemoveEntityEffectPacket {
+    pub entity_id: types::VarInt,
+    pub effect_id: types::VarInt,
+}
+
+impl Packet for RemoveEntityEffectPacket {
+    const ID: i32 = 0x43;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct ResetScorePacket {
+    pub entity_name: types::String,
+    pub objective_name: types::Optional<types::String>,
+}
+
+impl Packet for ResetScorePacket {
+    const ID: i32 = 0x44;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct RemoveResourcePackPacket {
+    pub uuid: types::Optional<types::UUID>,
+}
+
+impl Packet for RemoveResourcePackPacket {
+    const ID: i32 = 0x45;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct AddResourcePackPacket {
+    pub uuid: types::UUID,
+    pub url: types::String,
+    pub hash: types::String,
+    pub is_forced: types::Boolean,
+    pub prompt_message: types::Optional<types::NBTValue>
+}
+
+impl Packet for AddResourcePackPacket {
+    const ID: i32 = 0x46;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct RespawnPacket {
+    pub dimension_type: types::VarInt,
+    pub dimention_name: types::Identifier,
+    pub hashed_seed: types::Long,
+    pub game_mode: types::UnsignedByte,
+    pub prev_game_mode: types::UnsignedByte,
+    pub is_debug: types::Boolean,
+    pub is_flat: types::Boolean,
+    pub death_location: types::Optional<(types::Identifier, types::Position)>,
+    pub portal_cooldown: types::VarInt,
+    pub data_kept: types::Byte,
+}
+
+impl Packet for RespawnPacket {
+    const ID: i32 = 0x47;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetHeadRotationPacket {
+    pub entity_id: types::VarInt,
+    pub head_yaw: types::Angle,  // New angle, not a delta.
+}
+
+impl Packet for SetHeadRotationPacket {
+    const ID: i32 = 0x48;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct UpdateSectionBlocksPacket {
+    pub chunk_section_position: types::Long,
+    // Each entry is composed of the block state id, shifted left by 12, and the relative
+    // block position in the chunk section (4 bits for x, z, and y, from left to right).
+    pub blocks_array: types::Array<types::VarLong>,
+}
+
+impl Packet for UpdateSectionBlocksPacket {
+    const ID: i32 = 0x49;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SelectAdvancementsTabPacket {
+    pub id: types::Optional<types::Identifier>,
+}
+
+impl Packet for SelectAdvancementsTabPacket {
+    const ID: i32 = 0x4A;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct ServerDataPacket {
+    pub motd: types::NBTValue,
+    pub icon: types::Optional<types::ByteArray>
+}
+
+impl Packet for ServerDataPacket {
+    const ID: i32 = 0x4B;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetActionBarTextPacket {
+    pub text: types::NBTValue,
+}
+
+impl Packet for SetActionBarTextPacket {
+    const ID: i32 = 0x4C;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetBorderCenterPacket {
+    pub x: types::Double,
+    pub z: types::Double
+}
+
+impl Packet for SetBorderCenterPacket {
+    const ID: i32 = 0x4D;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetBorderLerpSizePacket {
+    pub old_diameter: types::Double,
+    pub new_diameter: types::Double,
+    pub speed: types::VarLong,
+}
+
+impl Packet for SetBorderLerpSizePacket {
+    const ID: i32 = 0x4E;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetBorderSizePacket {
+    pub diameter: types::Double,
+}
+
+impl Packet for SetBorderSizePacket {
+    const ID: i32 = 0x4F;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetBorderWarningDelayPacket {
+    pub delay: types::VarInt,
+}
+
+impl Packet for SetBorderWarningDelayPacket {
+    const ID: i32 = 0x50;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetBorderWarningDistancePacket {
+    pub distance: types::VarInt,
+}
+
+impl Packet for SetBorderWarningDistancePacket {
+    const ID: i32 = 0x51;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetCameraPacket {
+    pub camera_id: types::VarInt,
+}
+
+impl Packet for SetCameraPacket {
+    const ID: i32 = 0x52;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct SetHeldItemPacket {
@@ -1159,5 +1381,147 @@ pub struct SetHeldItemPacket {
 
 impl Packet for SetHeldItemPacket {
     const ID: i32 = 0x53;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetCenterChunkPacket {
+    pub x: types::VarInt,
+    pub z: types::VarInt
+}
+
+impl Packet for SetCenterChunkPacket {
+    const ID: i32 = 0x54;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetRenderDistancePacket {
+    pub view_distance: types::VarInt,
+}
+
+impl Packet for SetRenderDistancePacket {
+    const ID: i32 = 0x55;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct SetDefaultSpawnPositionPacket {
+    pub location: types::Position,
+    pub angle: types::Float
+}
+
+impl Packet for SetDefaultSpawnPositionPacket {
+    const ID: i32 = 0x56;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct DisplayObjectivePacket {
+    // The position of the scoreboard. 
+    //   0: list, 
+    //   1: sidebar, 
+    //   2: below name, 
+    //   3 - 18: team specific sidebar, indexed as 3 + team color.
+    pub position: types::VarInt,
+    // The unique name for the scoreboard to be displayed.
+    pub score_name: types::String
+}
+
+impl Packet for DisplayObjectivePacket {
+    const ID: i32 = 0x57;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum EntityMetadataValue {
+    Byte(types::Byte),
+    VarInt(types::VarInt),
+    VarLong(types::VarLong),
+    Float(types::Float),
+    String(types::String),
+    TextComponent(types::NBTValue),
+    OptionalTextComponent(types::Optional<types::NBTValue>),
+    Slot(types::Slot),
+    Boolean(types::Boolean),
+    Rotations(types::FloatVec3),
+    Position(types::Position),
+    OptionalPosition(types::Optional<types::Position>),
+    Direction(types::VarInt),
+    OptionalUUID(types::Optional<types::UUID>),
+    BlockState(types::VarInt),
+    OptionalBlockState(types::VarInt),  // 0 for absent (air is unrepresentable)
+    NBT(types::NBTValue),
+    Particle(types::ParticleEnum),
+    Particles(types::Array<types::ParticleEnum>),
+    VillagerData {
+        villager_type: types::VarInt,
+        villager_profession: types::VarInt,
+        villager_level: types::VarInt
+    },
+    OptionalVarint(types::OptionalVarInt),
+    Pose(types::EntityPose),
+    CatVariant(types::VarInt),
+    WolfVariant(types::IdOr<types::WolfVariant>),
+    FrogVariant(types::VarInt),
+    OptionalGlobalPosition(types::Optional<types::GlobalPosition>),
+    PaintingVariant(types::IdOr<types::PaintingVariant>),
+    SnifferState(types::VarInt),
+    ArmadilloState(types::VarInt),
+    Vector3(types::FloatVec3),
+    Quaternion(types::FloatVec4)
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct EntityMetadataEntry {
+    pub index: types::UnsignedByte,
+    pub value: EntityMetadataValue
+}
+
+#[derive(Debug, Clone)]
+pub struct SetEntityMetadataPacket {
+    pub entity_id: types::VarInt,
+    pub metadata: Vec<EntityMetadataEntry>
+}
+
+impl PacketReadable for SetEntityMetadataPacket {
+    fn read(stream: &mut impl std::io::Read) -> Self {
+        let entity_id = types::VarInt::read(stream);
+        let mut metadata = Vec::new();
+        loop {
+            let metadata_entry_index = types::UnsignedByte::read(stream);
+            if metadata_entry_index.get_value() == 0xFF {
+                break;
+            }
+            let metadata_entry_value = EntityMetadataValue::read(stream);
+            metadata.push(EntityMetadataEntry {
+                index: metadata_entry_index,
+                value: metadata_entry_value
+            });
+        };
+        Self {
+            entity_id: entity_id, 
+            metadata: metadata
+        }
+    }
+}
+
+impl PacketWritable for SetEntityMetadataPacket {
+    fn write(&self, stream: &mut impl std::io::Write) {
+        self.entity_id.write(stream);
+        for metadata_entry in &self.metadata {
+            metadata_entry.write(stream);
+        }
+        types::UnsignedByte::new(0xFF).write(stream);
+    }
+}
+
+impl PacketSerde for SetEntityMetadataPacket {}
+
+impl Packet for SetEntityMetadataPacket {
+    const ID: i32 = 0x58;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
