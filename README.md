@@ -14,7 +14,8 @@ Implementing the Minecraft Protocol 767 (1.21.1) in rust as an API to be used by
 | Configuration | 100% | 100% |
 | Play | 100%* | 94/124 |
 
-> * not validated
+\* not validated
+
 > online mode (packet encryption) will probably never be supported
 
 ---
