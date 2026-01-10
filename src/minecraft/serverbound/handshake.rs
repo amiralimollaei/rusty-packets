@@ -6,7 +6,7 @@ use crate::minecraft::{
 };
 
 
-#[derive(Clone, Debug)]
+#[derive(PacketSerde, Clone, Debug)]
 pub enum HandshakeRequest {
     STATUS = 1,
     LOGIN = 2,
@@ -18,7 +18,7 @@ pub struct HandshakeStartPacket {
     protocol: types::VarInt,
     hostname: types::String,
     port: types::UnsignedShort,
-    next_state: types::VarInt,
+    next_state: HandshakeRequest,
 }
 
 impl HandshakeStartPacket {
@@ -28,7 +28,7 @@ impl HandshakeStartPacket {
             protocol: protocol.into(),
             hostname: hostname.into(),
             port: port.into(),
-            next_state: (next_state as i32).into()
+            next_state: next_state,
         }
     }
 }

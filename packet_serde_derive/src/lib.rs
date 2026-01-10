@@ -1,6 +1,8 @@
 extern crate proc_macro;
+use std::any::Any;
+
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{ToTokens, quote};
 use syn::{self, parse_macro_input, Data, Fields, Ident, Attribute};
 
 #[proc_macro_derive(PacketSerde, attributes(discriminant_type))]
@@ -103,8 +105,16 @@ fn generate_enum_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::T
     
     let write_arms = e.variants.iter().enumerate().map(|(i, variant)| {
         let variant_name = &variant.ident;
-        let discriminant = i as i32;
-        
+        let discriminant = match &variant.discriminant {
+            Some((_, exp)) => {
+                exp.to_token_stream()
+            },
+            None => {
+                let enumerator = i as i32;
+                quote! { #enumerator }
+            },
+        };
+
         match &variant.fields {
             Fields::Named(fields) => {
                 let field_names: Vec<_> = fields.named.iter()
@@ -146,7 +156,15 @@ fn generate_enum_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::T
     
     let read_arms = e.variants.iter().enumerate().map(|(i, variant)| {
         let variant_name = &variant.ident;
-        let discriminant = i as i32;
+        let discriminant = match &variant.discriminant {
+            Some((_, exp)) => {
+                exp.to_token_stream()
+            },
+            None => {
+                let enumerator = i as i32;
+                quote! { #enumerator }
+            },
+        };
         
         match &variant.fields {
             Fields::Named(fields) => {
