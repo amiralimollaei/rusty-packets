@@ -5,9 +5,17 @@ use std::net::{TcpStream, ToSocketAddrs};
 
 use std::time::Duration;
 
+use crate::minecraft::packet::GenericPacket;
+
+use super::clientbound::ClientboundHandshakePacket;
+use super::clientbound::ClientboundStatusPacket;
+use super::clientbound::ClientboundLoginPacket;
+use super::clientbound::ClientboundConfigurationPacket;
+use super::clientbound::ClientboundPlayPacket;
+
 use super::serverbound::configuration::ClientMainHand;
 use super::packet::{
-    ConnectionState, Packet, PacketContainer, PacketRecv, PacketSend, set_threshold,
+    ConnectionState, Packet, RawPacket, PacketSendRecv, set_threshold,
 };
 use super::{PROTOCOL_VERSION, serverbound, clientbound, types};
 
@@ -100,25 +108,22 @@ impl Client {
         }
     }
 
-    pub fn status_request(&mut self) -> clientbound::status::StatusResponse {
-        let mut stream = connect(&self.hostname, self.port);
+    pub fn status_request(hostname: &str, port: u16) -> clientbound::status::StatusResponse {
+        let mut stream = connect(hostname, port);
 
         // send handshake start packet
         serverbound::handshake::HandshakeStartPacket::new(
             PROTOCOL_VERSION,
-            &self.hostname,
-            self.port,
+            hostname,
+            port,
             serverbound::handshake::HandshakeRequest::STATUS,
-        )
-        .send(&mut stream);
-
-        self.state = ConnectionState::Status;
+        ).send(&mut stream);
 
         // send status request packet to get the server's motd
-        serverbound::status::RequestPacket {}.send(&mut stream);
+        serverbound::status::StatusRequestPacket.send(&mut stream);
 
         // the next packet the server sends us must be a status reponse packet
-        clientbound::status::ResponsePacket::recv(&mut stream).deseralize()
+        clientbound::status::StatusResponsePacket::recv(&mut stream).deseralize()
     }
 
     pub fn get_state(&self) -> ConnectionState {
@@ -177,49 +182,42 @@ impl Client {
 
         // login phase loop
         loop {
-            // read one packet from the stream
-            let raw_packet = PacketContainer::recv(stream);
-            match raw_packet.get_id() {
-                clientbound::login::DisconnectPacket::ID => {
-                    let packet = clientbound::login::DisconnectPacket::from_packet(raw_packet);
+            // read one packet from the stream and process
+            match ClientboundLoginPacket::recv(stream) {
+                ClientboundLoginPacket::Disconnect(packet) => {
                     get_logger().error(format!("Login Failed!: {:?}", packet));
                     panic!()
-                }
-                clientbound::login::EncryptionRequestPacket::ID => {
-                    let packet = clientbound::login::EncryptionRequestPacket::from_packet(raw_packet);
+                },
+                ClientboundLoginPacket::EncryptionRequest(packet) => {
                     if packet.should_authenticate.into() {
                         get_logger().error(format!("Online mode is not suported!"));
                     }
                     get_logger().error(format!("Encryption is not suported: {:?}", packet));
                     panic!()
-                }
-                clientbound::login::LoginSuccessPacket::ID => {
-                    let packet = clientbound::login::LoginSuccessPacket::from_packet(raw_packet);
+                },
+                ClientboundLoginPacket::LoginSuccess(packet) => {
                     get_logger().info(format!(
                         "Login Finished! properties:{:?}",
                         packet.properties
                     ));
-                    // send login acknowledged packet to move to configuration phase
+                    // send login acknowledged packet and move on to configuration state
                     serverbound::login::LoginAcknowledgedPacket.send(stream);
-                    // set state to configuration
                     self.state = ConnectionState::Configuration;
                     break;
-                }
-                clientbound::login::SetCompressionPacket::ID => {
-                    let packet = clientbound::login::SetCompressionPacket::from_packet(raw_packet);
+                },
+                ClientboundLoginPacket::SetCompression(packet) => {
                     // set global compression threshold
                     set_threshold(packet.threshold.into());
                     get_logger().info(format!(
                         "Set Compression: threshold={}",
                         packet.threshold.get_value()
                     ));
-                }
-                clientbound::login::PluginRequestPacket::ID => {
+                },
+                ClientboundLoginPacket::PluginRequest(packet) => {
                     // Unlike plugin messages in "play" mode, these messages follow a lock-step request/response scheme,
                     // where the client is expected to respond to a request indicating whether it understood. The
                     // notchian client always responds that it hasn't understood, and sends an empty payload.
 
-                    let packet = clientbound::login::PluginRequestPacket::from_packet(raw_packet);
                     get_logger().info(format!("LoginPluginRequestPacket: {:?}", packet));
 
                     serverbound::login::LoginPluginResponsePacket {
@@ -228,20 +226,12 @@ impl Client {
                         data: Vec::new().into(),
                     }
                     .send(stream);
-                }
-                clientbound::login::CookieRequest::ID => {
-                    let packet = clientbound::login::CookieRequest::from_packet(raw_packet);
+                },
+                ClientboundLoginPacket::CookieRequest(packet) => {
                     get_logger().warn(format!("LoginCookieRequest: {:?}", packet));
 
                     serverbound::login::CookieResponsePacket::new(packet.key.into(), None).send(stream);
-                }
-                id => {
-                    get_logger().error(format!(
-                        "Login stage packet with ID={:#04x} is not implemented.",
-                        id
-                    ));
-                    panic!()
-                }
+                },
             }
         }
     }
@@ -270,100 +260,77 @@ impl Client {
 
         // configuration phase loop
         loop {
-            // read one packet from the stream
-            let raw_packet = PacketContainer::recv(stream);
-            match raw_packet.get_id() {
-                clientbound::configuration::CookieRequestPacket::ID => {
-                    let packet =
-                        clientbound::configuration::CookieRequestPacket::from_packet(raw_packet);
+            // read one packet from the stream and process
+            match ClientboundConfigurationPacket::recv(stream) {
+                ClientboundConfigurationPacket::CookieRequest(packet) => {
                     get_logger().warn(format!("CookieRequestPacket: {:?}", packet));
                     serverbound::configuration::CookieResponsePacket {
                         key: packet.key,
                         payload: types::Optional::None,
-                    }
-                    .send(stream);
-                }
-                clientbound::configuration::ClientboundPluginMessagePacket::ID => {
-                    let packet =
-                        clientbound::configuration::ClientboundPluginMessagePacket::from_packet(raw_packet);
-                    get_logger().warn(format!("Ignoring login plugin message: {:?}", packet))
-                }
-                clientbound::configuration::DisconnectPacket::ID => {
-                    let packet = clientbound::configuration::DisconnectPacket::from_packet(raw_packet);
-                    get_logger()
-                        .error(format!("Configuration Failed! reason: {:?}", packet.reason));
+                    }.send(stream);
+                },
+                ClientboundConfigurationPacket::PluginMessage(packet) => {
+                    get_logger().warn(format!("Ignored PluginMessagePacket: {:?}", packet))
+                },
+                ClientboundConfigurationPacket::Disconnect(packet) => {
+                    get_logger().error(format!("Configuration Failed: {:?}", packet.reason));
                     panic!();
-                }
-
-                clientbound::configuration::ConfigurationFinishPacket::ID => {
-                    let packet =
-                        clientbound::configuration::ConfigurationFinishPacket::from_packet(raw_packet);
+                },
+                ClientboundConfigurationPacket::ConfigurationFinish(packet) => {
                     get_logger().info(format!("Configuration Finished!: {:?}", packet));
                     // send finish configuration acknowledged packet
                     serverbound::configuration::AcknowledgeFinishConfigurationPacket.send(stream);
                     // set state to play
                     self.state = ConnectionState::Play;
                     break;
-                }
-
-                clientbound::configuration::KeepAlivePacket::ID => {
-                    let keepalive = clientbound::configuration::KeepAlivePacket::from_packet(raw_packet);
+                },
+                ClientboundConfigurationPacket::KeepAlive(packet) => {
                     // respond to keepalive packet
                     serverbound::configuration::ServerboundKeepAlivePacket {
-                        keepalive_id: keepalive.keepalive_id,
-                    }
-                    .send(stream);
-                }
-
-                clientbound::configuration::PingPacket::ID => {
-                    let packet = clientbound::configuration::PingPacket::from_packet(raw_packet);
+                        keepalive_id: packet.keepalive_id,
+                    }.send(stream);
+                },
+                ClientboundConfigurationPacket::Ping(packet) => {
                     // respond to keepalive packet
                     serverbound::configuration::PongPacket {
                         timestamp: packet.timestamp,
-                    }
-                    .send(stream);
-                }
-
-                clientbound::configuration::ResetChatPacket::ID => {
-                    let packet = clientbound::configuration::ResetChatPacket::from_packet(raw_packet);
+                    }.send(stream);
+                },
+                ClientboundConfigurationPacket::ResetChat(packet) => {
                     get_logger().info(format!("ResetChatPacket: {:?}", packet));
-                }
-
-                clientbound::configuration::RegistryDataPacket::ID => {
-                    let packet = clientbound::configuration::RegistryDataPacket::from_packet(raw_packet);
+                },
+                ClientboundConfigurationPacket::RegistryData(packet) => {
                     get_logger().warn(format!(
-                        "WARNING: Ignored registry data packet: {:?}",
+                        "Ignored registry data packet: {:?}",
                         packet.registry_id
                     ));
-                }
-
-                clientbound::configuration::AddResourcePackPacket::ID => {
-                    let packet =
-                        clientbound::configuration::AddResourcePackPacket::from_packet(raw_packet);
+                },
+                ClientboundConfigurationPacket::RemoveResourcePack(packet) => {
                     get_logger().warn(format!(
-                        "WARNING: Ignored add resource pack packet: {:?}",
+                        "Ignored remove resource pack packet: {:?}",
                         packet
                     ));
-                }
-
-                clientbound::configuration::RemoveResourcePackPacket::ID => {
-                    let packet =
-                        clientbound::configuration::RemoveResourcePackPacket::from_packet(raw_packet);
+                },
+                ClientboundConfigurationPacket::AddResourcePack(packet) => {
                     get_logger().warn(format!(
-                        "WARNING: Ignored remove resource pack packet: {:?}",
+                        "Ignored add resource pack packet: {:?}",
                         packet
                     ));
-                }
+                },
+                ClientboundConfigurationPacket::StoreCookie(packet) => {
+                    get_logger().warn(format!("Ignored StoreCookiePacket: {:?}", packet));
+                },
+                ClientboundConfigurationPacket::Transfer(packet) => todo!("transfer packet is not supported, but got: {:?}", packet),
+                ClientboundConfigurationPacket::FeatureFlags(packet) => {
+                    get_logger().info(format!("Feature Flags: {:?}", packet.feature_flags));
+                },
+                ClientboundConfigurationPacket::UpdateTags(packet) => {
+                    get_logger().warn(format!("Ignored UpdateTagsPacket: {:?}", packet));
+                },
+                ClientboundConfigurationPacket::KnownServerPacks(packet) => {
+                    get_logger().info(format!("Known Server Packs: {:?}", packet.packs));
 
-                0x0D => {
-                    get_logger().warn(format!("WARNING: Ignored update tags packet"));
-                }
-
-                // TODO: implement packets
-                clientbound::configuration::KnownServerPacksPacket::ID => {
-                    let packet =
-                        clientbound::configuration::KnownServerPacksPacket::from_packet(raw_packet);
-                    get_logger().info(format!("Known Packs: {:?}", packet));
+                    // respond with the default notchain response
                     serverbound::configuration::KnownClientPacksPacket {
                         packs: vec![serverbound::configuration::ServerboundKnownPacksPacket {
                             namespace: "minecraft".into(),
@@ -373,21 +340,13 @@ impl Client {
                         .into(),
                     }
                     .send(stream);
-                }
-
-                clientbound::configuration::FeatureFlagsPacket::ID => {
-                    let packet = clientbound::configuration::FeatureFlagsPacket::from_packet(raw_packet);
-                    get_logger().info(format!("Feature Flags: {:?}", packet));
-                }
-
-                // TODO: don't completely die just because one packet is not supported
-                id => {
-                    get_logger().error(format!(
-                        "Configuration stage packet with ID={:#04x} is not implemented.",
-                        id
-                    ));
-                    panic!()
-                }
+                },
+                ClientboundConfigurationPacket::CustomReportDetails(packet) => {
+                    get_logger().info(format!("Custom Report Details: {:?}", packet.details));
+                },
+                ClientboundConfigurationPacket::ServerLinks(packet) => {
+                    get_logger().info(format!("Server Links: {:?}", packet.links));
+                },
             }
         }
     }
@@ -424,44 +383,30 @@ impl Client {
         };
     }
 
-    fn process_play_packet(&mut self, raw_packet: PacketContainer, stream: &mut TcpStream) {
-        match raw_packet.get_id() {
-            clientbound::play::SynchronizePlayerPositionPacket::ID => {
-                let packet = clientbound::play::SynchronizePlayerPositionPacket::from_packet(raw_packet);
-                self.execute_synchronize_player_position_packet(&packet);
-                get_logger().info(format!("Teleported by server: {:?}", self.location));
-                // send teleport confirmation packet
-                serverbound::play::ConfirmTeleportationPacket {
-                    teleport_id: packet.teleport_id.clone(),
-                }
-                .send(stream);
-            }
-
-            clientbound::play::ChangeDifficultyPacket::ID => {
-                let packet = clientbound::play::ChangeDifficultyPacket::from_packet(raw_packet);
-                get_logger().info(format!("Difficulty Changed: {:?}", packet));
-            }
-
-            clientbound::play::SetHeldItemPacket::ID => {
-                let packet = clientbound::play::SetHeldItemPacket::from_packet(raw_packet);
-                get_logger().info(format!("Held Slot Changed: {:?}", packet));
-            }
-
-            clientbound::play::SpawnEntityPacket::ID => {
-                let packet = clientbound::play::SpawnEntityPacket::from_packet(raw_packet);
-                get_logger().info(format!("SpawnEntityPacket: {:?}", packet));
-            }
-
-            id => {
-                // avoid spamming the logger with the same message
-                unsafe {
-                    let ids = &raw mut NOT_IMPLEMENTED_PACKET_IDS as *mut Vec<i32>;
-                    if !(*ids).contains(&id) {
-                        get_logger().warn(format!(
-                            "Clientbound Play packet with ID={:#04x} is not implemented, skipping.",
-                            id
-                        ));
-                        (*ids).push(id);
+    fn process_play_bundle_packets(&mut self, bundle_packets: Vec<ClientboundPlayPacket>) {
+        for packet in bundle_packets {
+            match packet { 
+                ClientboundPlayPacket::ChangeDifficulty(packet) => {
+                    get_logger().info(format!("Difficulty Changed: {:?}", packet));
+                },
+                ClientboundPlayPacket::SetHeldItem(packet) => {
+                    get_logger().info(format!("Held Slot Changed: {:?}", packet));
+                },
+                ClientboundPlayPacket::SpawnEntity(packet) => {
+                    get_logger().info(format!("SpawnEntityPacket: {:?}", packet));
+                },
+                packet => {
+                    let id = packet.get_id();
+                    // avoid spamming the logger with the same message
+                    unsafe {
+                        let ids = &raw mut NOT_IMPLEMENTED_PACKET_IDS as *mut Vec<i32>;
+                        if !(*ids).contains(&id) {
+                            get_logger().warn(format!(
+                                "Clientbound Play packet with ID={:#04x} is not implemented, skipping.",
+                                id
+                            ));
+                            (*ids).push(id);
+                        }
                     }
                 }
             }
@@ -471,37 +416,40 @@ impl Client {
     fn play(&mut self, stream: &mut TcpStream) {
         assert_eq!(self.state, ConnectionState::Play);
 
-        let mut bundle_packets: Vec<PacketContainer> = Vec::new();
-        let mut do_bundle: bool = false;
+        let mut bundle_packets: Vec<ClientboundPlayPacket> = Vec::new();
 
         // play phase loop
         loop {
             // read one packet from the stream
-            let raw_packet = PacketContainer::recv(stream);
+            let packet = ClientboundPlayPacket::recv(stream);
 
-            match raw_packet.get_id() {
-                clientbound::play::BundleDelimiterPacket::ID => {
-                    // let packet: server::BundleDelimiterPacket = server::BundleDelimiterPacket::from_packet(raw_packet);
+            match packet {
+                // packets that are bundled when processing
+                ClientboundPlayPacket::BundleDelimiter(packet) => {
                     get_logger().debug(format!("BundleDelimiterPacket"));
-                    if !do_bundle {
-                        do_bundle = true
-                    } else {
-                        for pkt in bundle_packets.clone() {
-                            self.process_play_packet(pkt, stream);
-                        }
-                    }
+                    self.process_play_bundle_packets(bundle_packets);
+                    bundle_packets = Vec::new();
                 }
+                
+                // packets that are not bundled when processing
+                ClientboundPlayPacket::SynchronizePlayerPosition(packet) => {
+                    self.execute_synchronize_player_position_packet(&packet);
+                    get_logger().info(format!("Teleported by server: {:?}", self.location));
+                    // send teleport confirmation packet
+                    serverbound::play::ConfirmTeleportationPacket {
+                        teleport_id: packet.teleport_id.clone(),
+                    }
+                    .send(stream);
+                },
 
                 // excluded from bundle delimiter because the server closes the connection after this packet
-                clientbound::play::DisconnectPacket::ID => {
-                    let packet = clientbound::play::DisconnectPacket::from_packet(raw_packet);
+                ClientboundPlayPacket::Disconnect(packet) => {
                     get_logger().error(format!("Disconnected: {:?}", packet.reason));
                     self.state = ConnectionState::Handshaking;
                     break;
                 }
 
-                clientbound::play::KeepAlivePacket::ID => {
-                    let packet = clientbound::play::KeepAlivePacket::from_packet(raw_packet);
+                ClientboundPlayPacket::KeepAlive(packet) => {
                     // respond to keepalive packet
                     serverbound::play::KeepAlivePacket {
                         keepalive_id: packet.keepalive_id.clone(),
@@ -509,22 +457,16 @@ impl Client {
                     .send(stream);
                 }
 
-                clientbound::play::LoginPacket::ID => {
-                    let packet = clientbound::play::LoginPacket::from_packet(raw_packet);
+                ClientboundPlayPacket::Login(packet) => {
                     get_logger().info(format!("Successfully Logged In!: {:?}", packet));
                 }
 
-                clientbound::play::PlayerAbilitiesPacket::ID => {
-                    let packet = clientbound::play::PlayerAbilitiesPacket::from_packet(raw_packet);
+                ClientboundPlayPacket::PlayerAbilities(packet) => {
                     get_logger().info(format!("Player Abilities: {:?}", packet));
                 }
 
                 _ => {
-                    if do_bundle {
-                        bundle_packets.push(raw_packet);
-                    } else {
-                        self.process_play_packet(raw_packet, stream);
-                    }
+                    bundle_packets.push(packet);
                 }
             }
         }

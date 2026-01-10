@@ -1,11 +1,12 @@
 // packet implementation based on https://minecraft.wiki/w/Java_Edition_protocol/Packets?oldid=2789623
-use crate::minecraft::types;
+use crate::minecraft::types::{self, Length, VarInt};
 use crate::utils::ansi::string::AnsiString;
 use crate::utils::logging::{get_log_level, get_logger};
 
 use flate2::Compression;
 use flate2::bufread::ZlibDecoder;
 use flate2::write::ZlibEncoder;
+use std::fmt::Debug;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 pub trait PacketWritable {
@@ -31,106 +32,82 @@ pub trait PacketReadable {
 pub trait PacketSerde: PacketReadable + PacketWritable {}
 
 #[derive(Clone, Debug)]
-pub struct PacketContainer {
-    packet_id: i32,
-    packet_data: Vec<u8>,
+pub struct RawPacket {
+    // Raw Packet Data (Packet ID as VarInt and Packet Data as a ByteArray)
+    raw_data: Vec<u8>,
 }
 
-impl PacketContainer {
+impl RawPacket {
     #[inline]
-    pub fn new(packet_id: i32, packet_data: Vec<u8>) -> Self {
-        Self {
-            packet_id,
-            packet_data,
-        }
+    pub fn new(data: Vec<u8>) -> Self {
+        Self { raw_data: data }
     }
 
-    pub fn to_string(&self) -> String {
-        if self.packet_data.len() > 100 {
-            let data = self.packet_data.as_slice()[0..100].to_vec();
-            let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-            format!(
-                "Packet(ID={:#02x}, DATA=[{} ...])",
-                self.packet_id,
-                data.join(" ")
-            )
-        } else {
-            let data = self.packet_data.clone();
-            let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-            format!(
-                "Packet(ID={:#02x}, DATA=[{}])",
-                self.packet_id,
-                data.join(" ")
-            )
-        }
-    }
-
-    pub fn as_stream(&self) -> Cursor<Vec<u8>> {
+    pub fn raw_stream(&self) -> Cursor<Vec<u8>> {
         let mut stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        stream.write_all(&mut self.packet_data.clone()).unwrap();
+        stream.write_all(&mut self.raw_data.clone()).unwrap();
         stream.seek(SeekFrom::Start(0)).unwrap();
         stream
     }
 
-    pub fn get_id(&self) -> i32 {
-        self.packet_id
-    }
-
-    fn get_raw_packet(&self) -> Vec<u8> {
-        // create a memory stream
-        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        // write packet id
-        types::VarInt::from_i32(self.packet_id).write(&mut packet_stream);
-        // write packet data
-        packet_stream
-            .write_all(&mut self.packet_data.clone())
-            .expect("Error writing packet data.");
-        // go back to the start of the memory stream
-        packet_stream
-            .seek(SeekFrom::Start(0))
-            .expect("Error reading packet data.");
-        // read the memory stream
-        let mut packet_ = Vec::new();
-        packet_stream
-            .read_to_end(&mut packet_)
-            .expect("Error reading packet data.");
-        // return
-        packet_
-    }
-
-    pub fn write_without_compression(&self, stream: &mut impl Write) {
-        // encode raw packet
-        let mut packet = self.get_raw_packet();
-        // write packet length as varint
-        types::Length::from_i32(packet.len() as i32).write(stream);
-        // write packet
-        stream
-            .write_all(&mut packet)
-            .expect("Error writing packet data.");
-    }
-
-    fn get_compressed_packet(&self) -> (Vec<u8>, bool) {
-        let threshold: i32 = get_threshold();
-        // encode raw packet (Packet ID + Packet Data)
-        let packet = self.get_raw_packet();
-        let data_length = packet.len();
-        // compress packet if needed
-        if data_length >= threshold as usize {
-            let mut compressed_packet: Vec<u8> = Vec::new();
-            // compress packet id + packet data
-            let mut zlib_encoder = ZlibEncoder::new(Cursor::new(packet), Compression::default());
-            zlib_encoder
-                .read_to_end(&mut compressed_packet)
-                .expect("error while compressing packet!");
-            (compressed_packet, true)
+    pub fn to_string(&self) -> String {
+        let (id, data) = self.parse();
+        if data.len() > 100 {
+            let data = &data[0..100];
+            let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
+            format!("Packet(ID={:#02x}, DATA=[{} ...])", id, data.join(" "))
         } else {
-            (packet, false)
+            let data = &data;
+            let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
+            format!("Packet(ID={:#02x}, DATA=[{}])", id, data.join(" "))
         }
     }
 
+    fn get_data(&self) -> Vec<u8> {
+        self.raw_data.clone()
+    }
+
+    fn parse(&self) -> (i32, Vec<u8>) {
+        let stream = &mut Cursor::new(self.raw_data.clone());
+        let id = VarInt::read(stream).get_value();
+        let mut data = Vec::new();
+        stream.read_to_end(&mut data).unwrap();
+        (id, data)
+    }
+
+    fn get_data_ref(&self) -> &Vec<u8> {
+        &self.raw_data
+    }
+
+    fn get_data_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.raw_data
+    }
+
+    pub fn write_without_compression(&mut self, stream: &mut impl Write) {
+        // write packet length as varint
+        types::Length::from_i32(self.raw_data.len() as i32).write(stream);
+        // write packet
+        stream
+            .write_all(&mut self.raw_data)
+            .expect("Error writing packet data.");
+    }
+
+    fn get_compressed_packet(&mut self) -> Vec<u8> {
+        // encode raw packet (Packet ID + Packet Data)
+        let mut compressed_packet: Vec<u8> = Vec::new();
+        // compress packet id + packet data
+        let mut zlib_encoder =
+            ZlibEncoder::new(Cursor::new(&mut self.raw_data), Compression::default());
+        zlib_encoder
+            .read_to_end(&mut compressed_packet)
+            .expect("error while compressing packet!");
+        compressed_packet
+    }
+
     // https://wiki.vg/Protocol#Packet_format
-    pub fn write_with_compression(&self, stream: &mut impl Write) {
-        let (mut packet_cmp, is_compressed) = self.get_compressed_packet();
+    pub fn write_with_compression(&mut self, stream: &mut impl Write) {
+        let mut packet_cmp = self.get_compressed_packet();
+        let is_compressed = self.raw_data.len() > get_threshold() as usize;
         let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::with_capacity(packet_cmp.len()));
         // write data length as varint
         types::Length::from_i32(if is_compressed {
@@ -158,20 +135,21 @@ impl PacketContainer {
             .expect("Error writing packet data.");
     }
 
-    pub fn send(&self, stream: &mut impl Write) {
+    pub fn send(&mut self, stream: &mut impl Write) {
         let threshold: i32 = get_threshold();
         if threshold > 0 {
             self.write_with_compression(stream)
         } else {
             self.write_without_compression(stream)
         }
-
-        let mut ansi_string = AnsiString::empty();
-        ansi_string = ansi_string + AnsiString::new_colorless("[");
-        ansi_string = ansi_string + AnsiString::new_fore("🠩", (0, 255, 0));
-        ansi_string = ansi_string + AnsiString::new_colorless("] ");
-        ansi_string = ansi_string + AnsiString::new_colorless(&self.to_string());
-        get_logger().debug(ansi_string);
+        if get_logger().is_debug() {
+            get_logger().debug(
+                AnsiString::new_colorless("[")
+                    + AnsiString::new_fore("🠩", (0, 255, 0))
+                    + AnsiString::new_colorless("] ")
+                    + AnsiString::new_colorless(&self.to_string()),
+            );
+        }
     }
 
     #[inline]
@@ -179,23 +157,13 @@ impl PacketContainer {
         // read packet length as varint
         let packet_length = types::Length::read(stream).get_value();
         // read packet
-        let mut packet: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        for _ in 0..packet_length {
-            let mut bytes: [u8; 1] = [0];
-            stream
-                .read_exact(&mut bytes)
-                .expect("Error reading packet data.");
-            packet.write_all(&mut bytes).unwrap();
-        }
-        // go back to the start of packet
-        packet.seek(SeekFrom::Start(0)).unwrap();
-        // read packet id as varint
-        let packet_id = types::VarInt::read(&mut packet);
-        // read the memory stream
-        let mut packet_data = Vec::new();
-        packet.read_to_end(&mut packet_data).unwrap();
-
-        Self::new(packet_id.get_value(), packet_data)
+        let mut data: Vec<u8> = Vec::with_capacity(packet_length as usize);
+        stream
+            .take(packet_length as u64)
+            .read_to_end(&mut data)
+            .unwrap();
+        // construct instance
+        Self::new(data)
     }
 
     #[inline]
@@ -240,13 +208,11 @@ impl PacketContainer {
         };
 
         let mut packet_stream = Cursor::new(packet_data_and_id);
-        // read packet id as varint
-        let packet_id = types::VarInt::read(&mut packet_stream);
         // read the memory stream
         let mut packet_data = Vec::new();
         packet_stream.read_to_end(&mut packet_data).unwrap();
 
-        Self::new(packet_id.get_value(), packet_data)
+        Self::new(packet_data)
     }
 
     #[inline]
@@ -258,18 +224,16 @@ impl PacketContainer {
             Self::from_stream_without_compression(stream)
         };
 
-        let mut ansi_string = AnsiString::empty();
-        ansi_string = ansi_string + AnsiString::new_colorless("[");
-        ansi_string = ansi_string + AnsiString::new_fore("🠯", (255, 0, 0));
-        ansi_string = ansi_string + AnsiString::new_colorless("] ");
-        ansi_string = ansi_string + AnsiString::new_colorless(&packet.to_string());
-        get_logger().debug(ansi_string);
+        if get_logger().is_debug() {
+            get_logger().debug(
+                AnsiString::new_colorless("[")
+                    + AnsiString::new_fore("🠯", (255, 0, 0))
+                    + AnsiString::new_colorless("] ")
+                    + AnsiString::new_colorless(&packet.to_string()),
+            );
+        }
 
         packet
-    }
-
-    pub fn ger_reader(&mut self) -> PacketReader<Cursor<Vec<u8>>> {
-        PacketReader::from_stream(self.as_stream())
     }
 }
 
@@ -334,30 +298,45 @@ pub trait Packet {
     const PHASE: ConnectionState;
 }
 
+pub trait PacketSendRecv {
+    fn recv(stream: &mut impl Read) -> Self;
+    fn send(&self, stream: &mut impl Write);
+}
+
+impl<U: Packet + PacketSerde> PacketSendRecv for U {
+    fn recv(stream: &mut impl Read) -> Self {
+        let raw_stream = &mut RawPacket::recv(stream).raw_stream();
+        let packet_id = VarInt::read(raw_stream).get_value();
+        assert!(packet_id == Self::ID);
+        Self::read(raw_stream)
+    }
+
+    fn send(&self, stream: &mut impl Write) {
+        // create a memory stream
+        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        // write packet data
+        VarInt::from_i32(Self::ID).write(&mut packet_stream);
+        self.write(&mut packet_stream);
+        // go back to the start of the memory stream
+        packet_stream
+            .seek(SeekFrom::Start(0))
+            .expect("Error seeking packet data.");
+        // read the memory stream
+        let mut packet_data = Vec::new();
+        packet_stream
+            .read_to_end(&mut packet_data)
+            .expect("Error reading packet data.");
+        // send the packet
+        RawPacket {
+            raw_data: packet_data,
+        }
+        .send(stream);
+    }
+}
+
 pub trait PacketIn<T: Read + Seek>: Packet {
     fn read(reader: &mut PacketReader<T>) -> Self;
 }
-
-pub trait PacketRecv: PacketIn<Cursor<Vec<u8>>> {
-    #[inline]
-    fn recv<S: Read>(stream: &mut S) -> Self
-    where
-        Self: Sized,
-    {
-        let mut packet_container = PacketContainer::recv(stream);
-        let mut packet_reader = packet_container.ger_reader();
-        Self::read(&mut packet_reader)
-    }
-
-    fn from_packet(packet: PacketContainer) -> Self
-    where
-        Self: Sized,
-    {
-        Self::read(&mut PacketReader::from_stream(packet.as_stream()))
-    }
-}
-
-impl<U: Packet + PacketSerde> PacketRecv for U {}
 
 impl<T: Read + Seek, U: Packet + PacketSerde> PacketIn<T> for U {
     fn read(reader: &mut PacketReader<T>) -> Self {
@@ -368,18 +347,6 @@ impl<T: Read + Seek, U: Packet + PacketSerde> PacketIn<T> for U {
 pub trait PacketOut<T: Write + Seek>: Packet {
     fn write(&self, writer: &mut PacketWriter<T>);
 }
-
-pub trait PacketSend: for<'a> PacketOut<&'a mut Cursor<Vec<u8>>> {
-    #[inline]
-    fn send<S: Write>(&self, stream: &mut S) {
-        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        let mut packet_writer = PacketWriter::from_stream(&mut packet_stream);
-        self.write(&mut packet_writer);
-        PacketContainer::new(Self::ID, packet_stream.get_ref().clone()).send(stream);
-    }
-}
-
-impl<U: Packet + PacketSerde> PacketSend for U {}
 
 impl<T: Write + Seek, U: Packet + PacketSerde> PacketOut<T> for U {
     fn write(&self, writer: &mut PacketWriter<T>) {
@@ -394,4 +361,35 @@ pub enum ConnectionState {
     Login,
     Configuration,
     Play,
+}
+
+pub trait GenericPacket: PacketSerde
+where
+    Self: Sized,
+    Self: Debug,
+{
+    fn recv(stream: &mut impl Read) -> Self {
+        Self::read(&mut RawPacket::recv(stream).raw_stream())
+    }
+
+    fn send(&self, stream: &mut impl Write) {
+        // create a memory stream
+        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        // write packet data
+        self.write(&mut packet_stream);
+        // go back to the start of the memory stream
+        packet_stream
+            .seek(SeekFrom::Start(0))
+            .expect("Error seeking packet data.");
+        // read the memory stream
+        let mut packet_data = Vec::new();
+        packet_stream
+            .read_to_end(&mut packet_data)
+            .expect("Error reading packet data.");
+        // send the packet
+        RawPacket {
+            raw_data: packet_data,
+        }
+        .send(stream);
+    }
 }

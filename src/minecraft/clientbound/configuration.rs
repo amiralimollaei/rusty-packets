@@ -1,7 +1,7 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
+    packet::{ConnectionState, GenericPacket, Packet, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
 
@@ -18,12 +18,12 @@ impl Packet for CookieRequestPacket {
 
 
 #[derive(PacketSerde, Debug, Clone)]
-pub struct ClientboundPluginMessagePacket {
+pub struct PluginMessagePacket {
     pub channel: types::Identifier,
     pub data: types::UnsizedByteArray,
 }
 
-impl Packet for ClientboundPluginMessagePacket {
+impl Packet for PluginMessagePacket {
     const ID: i32 = 0x01;
     const PHASE: ConnectionState = ConnectionState::Configuration;
 }
@@ -174,7 +174,7 @@ pub struct RegistryTagMap {
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct UpdateTagsPacket {
-    pub feature_flags: types::Array<types::String>
+    pub tags: types::Array<RegistryTagMap>
 }
 
 impl Packet for UpdateTagsPacket {
@@ -234,13 +234,13 @@ impl Packet for ServerLinksPacket {
     const PHASE: ConnectionState = ConnectionState::Configuration;
 }
 
-/*
+
 // ###### Generic Clientbound Configuration Packet ######
 
 #[derive(PacketSerde, Clone, Debug)]
 pub enum ClientboundConfigurationPacket {
     CookieRequest(CookieRequestPacket),
-    PluginMessage(ClientboundPluginMessagePacket),
+    PluginMessage(PluginMessagePacket),
     Disconnect(DisconnectPacket),
     ConfigurationFinish(ConfigurationFinishPacket),
     KeepAlive(KeepAlivePacket),
@@ -257,4 +257,5 @@ pub enum ClientboundConfigurationPacket {
     CustomReportDetails(CustomReportDetailsPacket),
     ServerLinks(ServerLinksPacket),
 }
-*/
+
+impl GenericPacket for ClientboundConfigurationPacket {}

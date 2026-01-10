@@ -8,7 +8,7 @@ use minecraft::application::Client;
 
 fn main() {
     // initialize the client
-    let mut client = Client::new("mc.gameup.ir", 25565, "SimitarXYZ");
+    let mut client = Client::new("localhost", 55916, "SimitarXYZ");
     client.connect();
     /*
     let statusresponse = client.status_request();

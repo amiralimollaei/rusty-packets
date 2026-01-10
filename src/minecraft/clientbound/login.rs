@@ -1,7 +1,7 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
+    packet::{ConnectionState, GenericPacket, Packet, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
 
@@ -69,11 +69,26 @@ impl Packet for PluginRequestPacket {
 
 
 #[derive(PacketSerde, Debug, Clone)]
-pub struct CookieRequest {
+pub struct CookieRequestPacket {
     pub key: types::Identifier,
 }
 
-impl Packet for CookieRequest {
+impl Packet for CookieRequestPacket {
     const ID: i32 = 0x05;
     const PHASE: ConnectionState = ConnectionState::Login;
 }
+
+
+// ###### Generic Clientbound Login Packet ######
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum ClientboundLoginPacket {
+    Disconnect(DisconnectPacket),
+    EncryptionRequest(EncryptionRequestPacket),
+    LoginSuccess(LoginSuccessPacket),
+    SetCompression(SetCompressionPacket),
+    PluginRequest(PluginRequestPacket),
+    CookieRequest(CookieRequestPacket)
+}
+
+impl GenericPacket for ClientboundLoginPacket {}

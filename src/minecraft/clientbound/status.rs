@@ -1,7 +1,7 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
+    packet::{ConnectionState, GenericPacket, Packet, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
 
@@ -135,17 +135,17 @@ impl StatusResponse {
 }
 
 #[derive(PacketSerde, Debug, Clone)]
-pub struct ResponsePacket {
+pub struct StatusResponsePacket {
     pub field_status: types::String,
 }
 
-impl ResponsePacket {
+impl StatusResponsePacket {
     pub fn deseralize(&self) -> StatusResponse {
         StatusResponse::from_json(self.field_status.to_string().as_str())
     }
 }
 
-impl Packet for ResponsePacket {
+impl Packet for StatusResponsePacket {
     const ID: i32 = 0x00;
     const PHASE: ConnectionState = ConnectionState::Status;
 }
@@ -160,3 +160,14 @@ impl Packet for PongPacket {
     const ID: i32 = 0x01;
     const PHASE: ConnectionState = ConnectionState::Status;
 }
+
+
+// ###### Generic Clientbound Status Packet ######
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum ClientboundStatusPacket {
+    Response(StatusResponsePacket),
+    Pong(PongPacket)
+}
+
+impl GenericPacket for ClientboundStatusPacket {}

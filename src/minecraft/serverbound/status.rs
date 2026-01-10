@@ -7,9 +7,9 @@ use crate::minecraft::{
 
 
 #[derive(PacketSerde, Debug, Clone)]
-pub struct RequestPacket;
+pub struct StatusRequestPacket;
 
-impl Packet for RequestPacket {
+impl Packet for StatusRequestPacket {
     const ID: i32 = 0x00;
     const PHASE: ConnectionState = ConnectionState::Status;
 }

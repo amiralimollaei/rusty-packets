@@ -88,4 +88,8 @@ impl<'a> Logger<'a> {
             println!("{}", astr.to_string(&ColorMode::Limited));
         }
     }
+
+    pub fn is_debug(&self) -> bool {
+        self.level > 2
+    }
 }

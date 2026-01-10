@@ -1,7 +1,7 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketReadable, PacketSerde, PacketWritable}, types
+    packet::{ConnectionState, GenericPacket, Packet, PacketReadable, PacketSerde, PacketWritable}, types
 };
 
 
@@ -232,18 +232,19 @@ impl Packet for CommandSuggestionsResponsePacket {
     const PHASE: ConnectionState = ConnectionState::Play;
 }
 
-/*
+
 #[derive(PacketSerde, Debug, Clone)]
 pub struct CommandsPacket {
-    pub reset: types::Array<GraphNode>, // TODO implelemnt GraphNode
-    pub root_index: types::VarInt,
+    //pub reset: types::Array<GraphNode>, // TODO implelemnt GraphNode
+    //pub root_index: types::VarInt,
+    pub data: types::UnsizedByteArray
 }
 
 impl Packet for CommandsPacket {
     const ID: i32 = 0x11;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
-*/
+
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct CloseContainerPacket {
@@ -601,6 +602,7 @@ impl Packet for UpdateLightPacket {
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct LoginPacket {
+    /*
     pub entity_id: types::Int,                                        // The player's Entity ID (EID).
     pub is_harcore: types::Boolean,
     pub dimensions: types::Array<types::String>,                      // Identifiers for all dimensions on the server.
@@ -621,6 +623,10 @@ pub struct LoginPacket {
     pub death_location: types::Optional<types::Position>,             // The location that the player died at.
     pub portal_cooldown: types::VarInt,                               // The number of ticks until the player can use the portal again.
     pub enforces_secure_chat: types::Boolean
+    */
+
+    // TODO: fix login packet structure not matching what the server sends us
+    pub data: types::UnsizedByteArray
 }
 
 impl Packet for LoginPacket {
@@ -1525,3 +1531,149 @@ impl Packet for SetEntityMetadataPacket {
     const ID: i32 = 0x58;
     const PHASE: ConnectionState = ConnectionState::Play;
 }
+
+
+// ###### Generic Clientbound Play Packet ######
+
+#[derive(PacketSerde, Debug, Clone)]
+pub struct PlaceholderPacket {
+    pub data: types::UnsizedByteArray
+}
+
+impl Packet for PlaceholderPacket {
+    const ID: i32 = -1;
+    const PHASE: ConnectionState = ConnectionState::Play;
+}
+
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum ClientboundPlayPacket {
+    BundleDelimiter(BundleDelimiterPacket),
+    SpawnEntity(SpawnEntityPacket),
+    SpawnExperienceOrb(SpawnExperienceOrbPacket),
+    EntityAnimation(EntityAnimationPacket),
+    AwardStatistics(AwardStatisticsPacket),
+    AcknowledgeBlockChange(AcknowledgeBlockChangePacket),
+    SetBlockDestroyStage(SetBlockDestroyStagePacket),
+    BlockEntityData(BlockEntityDataPacket),
+    BlockAction(BlockActionPacket),
+    BlockUpdate(BlockUpdatePacket),
+    BossBar(BossBarPacket),
+    ChangeDifficulty(ChangeDifficultyPacket),
+    ChunkBatchFinished(ChunkBatchFinishedPacket),
+    ChunkBatchStart(ChunkBatchStartPacket),
+    ChunkBiomes(ChunkBiomesPacket),
+    ClearTitles(ClearTitlesPacket),
+    CommandSuggestionsResponse(CommandSuggestionsResponsePacket),
+    Commands(CommandsPacket),
+    CloseContainer(CloseContainerPacket),
+    SetContainerContent(SetContainerContentPacket),
+    SetContainerProperty(SetContainerPropertyPacket),
+    SetContainerSlot(SetContainerSlotPacket),
+    CookieRequest(CookieRequestPacket),
+    SetCooldown(SetCooldownPacket),
+    ChatSuggestions(ChatSuggestionsPacket),
+    ClientboundPluginMessage(ClientboundPluginMessagePacket),
+    DamageEvent(DamageEventPacket),
+    DebugSample(DebugSamplePacket),
+    DeleteMessage(DeleteMessagePacket),
+    Disconnect(DisconnectPacket),
+    DisguisedChatMessage(DisguisedChatMessagePacket),
+    EntityEvent(EntityEventPacket),
+    Explosion(ExplosionPacket),
+    UnloadChunk(UnloadChunkPacket),
+    GameEvent(GameEventPacket),
+    OpenHorseScreen(OpenHorseScreenPacket),
+    HurtAnimation(HurtAnimationPacket),
+    InitializeWorldBorder(InitializeWorldBorderPacket),
+    KeepAlive(KeepAlivePacket),
+    ChunkDataAndUpdateLight(ChunkDataAndUpdateLightPacket),
+    WorldEvent(WorldEventPacket),
+    Particle(ParticlePacket),
+    UpdateLight(UpdateLightPacket),
+    Login(LoginPacket),
+    MapData(MapDataPacket),
+    MerchantOffers(MerchantOffersPacket),
+    UpdateEntityPosition(UpdateEntityPositionPacket),
+    UpdateEntityPositionAndRotation(UpdateEntityPositionAndRotationPacket),
+    UpdateEntityRotation(UpdateEntityRotationPacket),
+    MoveVehicle(MoveVehiclePacket),
+    OpenBook(OpenBookPacket),
+    OpenScreen(OpenScreenPacket),
+    OpenSignEditor(OpenSignEditorPacket),
+    Ping(PingPacket),
+    PingResponse(PingResponsePacket),
+    PlaceGhostRecipe(PlaceGhostRecipePacket),
+    PlayerAbilities(PlayerAbilitiesPacket),
+    PlayerChatMessage(PlayerChatMessagePacket),
+    EndCombat(EndCombatPacket),
+    EnterCombat(EnterCombatPacket),
+    CombatDeath(CombatDeathPacket),
+    PlayerInfoRemove(PlayerInfoRemovePacket),
+    PlayerInfoUpdate(PlayerInfoUpdatePacket),
+    LookAt(LookAtPacket),
+    SynchronizePlayerPosition(SynchronizePlayerPositionPacket),
+    UpdateRecipeBook(UpdateRecipeBookPacket),
+    RemoveEntities(RemoveEntitiesPacket),
+    RemoveEntityEffect(RemoveEntityEffectPacket),
+    ResetScore(ResetScorePacket),
+    RemoveResourcePack(RemoveResourcePackPacket),
+    AddResourcePack(AddResourcePackPacket),
+    Respawn(RespawnPacket),
+    SetHeadRotation(SetHeadRotationPacket),
+    UpdateSectionBlocks(UpdateSectionBlocksPacket),
+    SelectAdvancementsTab(SelectAdvancementsTabPacket),
+    ServerData(ServerDataPacket),
+    SetActionBarText(SetActionBarTextPacket),
+    SetBorderCenter(SetBorderCenterPacket),
+    SetBorderLerpSize(SetBorderLerpSizePacket),
+    SetBorderSize(SetBorderSizePacket),
+    SetBorderWarningDelay(SetBorderWarningDelayPacket),
+    SetBorderWarningDistance(SetBorderWarningDistancePacket),
+    SetCamera(SetCameraPacket),
+    SetHeldItem(SetHeldItemPacket),
+    SetCenterChunk(SetCenterChunkPacket),
+    SetRenderDistance(SetRenderDistancePacket),
+    SetDefaultSpawnPosition(SetDefaultSpawnPositionPacket),
+    DisplayObjective(DisplayObjectivePacket),
+    SetEntityMetadata(SetEntityMetadataPacket),
+    // TODO: implement the rest of the packets
+    PlaceholderPacket59(PlaceholderPacket),
+    PlaceholderPacket5A(PlaceholderPacket),
+    PlaceholderPacket5B(PlaceholderPacket),
+    PlaceholderPacket5C(PlaceholderPacket),
+    PlaceholderPacket5D(PlaceholderPacket),
+    PlaceholderPacket5E(PlaceholderPacket),
+    PlaceholderPacket5F(PlaceholderPacket),
+    PlaceholderPacket60(PlaceholderPacket),
+    PlaceholderPacket61(PlaceholderPacket),
+    PlaceholderPacket62(PlaceholderPacket),
+    PlaceholderPacket63(PlaceholderPacket),
+    PlaceholderPacket64(PlaceholderPacket),
+    PlaceholderPacket65(PlaceholderPacket),
+    PlaceholderPacket66(PlaceholderPacket),
+    PlaceholderPacket67(PlaceholderPacket),
+    PlaceholderPacket68(PlaceholderPacket),
+    PlaceholderPacket69(PlaceholderPacket),
+    PlaceholderPacket6A(PlaceholderPacket),
+    PlaceholderPacket6B(PlaceholderPacket),
+    PlaceholderPacket6C(PlaceholderPacket),
+    PlaceholderPacket6D(PlaceholderPacket),
+    PlaceholderPacket6E(PlaceholderPacket),
+    PlaceholderPacket6F(PlaceholderPacket),
+    PlaceholderPacket70(PlaceholderPacket),
+    PlaceholderPacket71(PlaceholderPacket),
+    PlaceholderPacket72(PlaceholderPacket),
+    PlaceholderPacket73(PlaceholderPacket),
+    PlaceholderPacket74(PlaceholderPacket),
+    PlaceholderPacket75(PlaceholderPacket),
+    PlaceholderPacket76(PlaceholderPacket),
+    PlaceholderPacket77(PlaceholderPacket),
+    PlaceholderPacket78(PlaceholderPacket),
+    PlaceholderPacket79(PlaceholderPacket),
+    PlaceholderPacket7A(PlaceholderPacket),
+    PlaceholderPacket7B(PlaceholderPacket),
+    PlaceholderPacket7C(PlaceholderPacket),
+}
+
+impl GenericPacket for ClientboundPlayPacket {}

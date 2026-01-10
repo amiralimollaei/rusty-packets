@@ -652,6 +652,23 @@ impl VarInt {
     pub fn get_value(&self) -> i32 {
         self.value
     }
+
+    pub fn write_buf(&self, mut buf: &mut [u8]) {
+        let mut value: u32 = u32::from_be_bytes(self.value.to_be_bytes());
+        loop {
+            if (value & !Self::SEGMENT_BITS) == 0 {
+                buf.write_all(&mut [value as u8]).expect(WRITE_ERROR);
+                break;
+            }
+
+            buf
+                .write_all(&mut [(value & Self::SEGMENT_BITS) as u8 | Self::CONTINUE_BIT])
+                .expect(WRITE_ERROR);
+
+            // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
+            value = value.wrapping_shr(7);
+        }
+    }
 }
 
 impl PacketWritable for VarInt {
@@ -2309,7 +2326,7 @@ impl NBTValue {
                 }
                 Self::LongArray(values)
             }
-            _ => panic!("NotImplemented"),
+            _ => panic!("Unknown type id in NBT data"),
         }
     }
 
