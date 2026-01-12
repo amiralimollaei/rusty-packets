@@ -2,7 +2,7 @@ use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
-    types,
+    types::{self, Byte},
 };
 
 #[derive(PacketSerde, Clone, Debug)]
@@ -27,15 +27,20 @@ pub struct ChangedSlot {
 }
 
 #[derive(PacketSerde, Clone, Debug)]
-#[discriminant_type(types::VarInt)]
+pub enum HandEnum {
+    MainHand,
+    OffHand,
+}
+
+#[derive(PacketSerde, Clone, Debug)]
 pub enum InteractionEnum {
     Interact {
-        hand: types::VarInt,
+        hand: HandEnum,
     },
     Attack,
     InteractAt {
         target: types::FloatVec3,
-        hand: types::VarInt,
+        hand: HandEnum,
     },
 }
 
@@ -43,6 +48,45 @@ pub enum InteractionEnum {
 pub enum SeenAdvancementAction {
     OpenedTab { tab_id: types::Identifier },
     ClosedScreen,
+}
+
+#[derive(PacketSerde, Clone, Debug)]
+pub enum MirrorEnum {
+    None,
+    LeftRight,
+    FrontBack,
+}
+
+#[derive(PacketSerde, Clone, Debug)]
+pub enum StructureBlockModeEnum {
+    Save,
+    Load,
+    Corner,
+    Data
+}
+
+#[derive(PacketSerde, Clone, Debug)]
+pub enum RotationEnum {
+    None,
+    Clockwise90,
+    Clockwise180,
+    Counterclockwise90
+}
+
+#[derive(PacketSerde, Clone, Debug)]
+#[discriminant_type(Byte)]
+pub enum DifficultyEnum {
+    Peaceful,
+    Easy,
+    Normal,
+    Hard
+}
+
+#[derive(PacketSerde, Clone, Debug)]
+pub enum ChatModeEnum {
+    Enabled,
+    CommandsOnly,
+    Hidden
 }
 
 // ###### Generic Serverbound Play Packet ######
@@ -57,7 +101,7 @@ pub enum ServerboundPlayPacket {
         location: types::Position,     // The location of the block to check.
     },
     ChangeDifficulty {
-        new_difficulty: types::Byte, // 0: peaceful, 1: easy, 2: normal, 3: hard .
+        new_difficulty: DifficultyEnum,
     },
     AcknowledgeMessage {
         message_count: types::VarInt,
@@ -96,7 +140,7 @@ pub enum ServerboundPlayPacket {
     ClientInformation {
         locale: types::String,                 // String: max 16 characters
         view_distance: types::Byte,            // Byte: for some reason this HAD TO BE SIGNED
-        chat_mode: types::VarInt, // VarInt Enum: 0: enabled, 1: commands only, 2: hidden
+        chat_mode: ChatModeEnum, // VarInt Enum: 0: enabled, 1: commands only, 2: hidden
         chat_colors: types::Boolean, // Boolean: can the chat be colored?
         skin_parts: types::UnsignedByte, // Unsigned Byte: parts of skin that are visible (7 bit bitflag)
         main_hand: types::VarInt,        // VarInt Enum: 0: left, 1: right
@@ -286,12 +330,12 @@ pub enum ServerboundPlayPacket {
     ProgramStructureBlock {
         locatrion: types::Position, // Block entity location
         action: types::VarInt, // An additional action to perform beyond simply saving the given data
-        mode: types::VarInt,   // One of SAVE (0), LOAD (1), CORNER (2), DATA (3).
+        mode: StructureBlockModeEnum,   // One of SAVE (0), LOAD (1), CORNER (2), DATA (3).
         name: types::String,
         offset: types::ByteVec3, // Between -48 and 48.
         size: types::ByteVec3,   // Between 0 and 48.
-        mirror: types::VarInt,   // One of NONE (0), LEFT_RIGHT (1), FRONT_BACK (2).
-        rotation: types::VarInt, // One of NONE (0), CLOCKWISE_90 (1), CLOCKWISE_180 (2), COUNTERCLOCKWISE_90 (3).
+        mirror: MirrorEnum,   // One of NONE (0), LEFT_RIGHT (1), FRONT_BACK (2).
+        rotation: RotationEnum, // One of NONE (0), CLOCKWISE_90 (1), CLOCKWISE_180 (2), COUNTERCLOCKWISE_90 (3).
         metadata: types::String,
         integrity: types::Float, // Between 0 and 1.
         seed: types::VarLong,
@@ -306,13 +350,13 @@ pub enum ServerboundPlayPacket {
         line4: types::String,
     },
     SwingArm {
-        hand: types::VarInt, // Hand used for the animation. 0: main hand, 1: off hand.
+        hand: HandEnum, // Hand used for the animation. 0: main hand, 1: off hand.
     },
     TeleportToEntity {
         target_player: types::UUID, // UUID of the player to teleport to (can also be an entity UUID).
     },
     UseItemOn {
-        hand: types::VarInt, // The hand from which the block is placed; 0: main hand, 1: off hand.
+        hand: HandEnum, // The hand from which the block is placed; 0: main hand, 1: off hand.
         location: types::Position,
         face: types::VarInt,
         // The position of the crosshair on the block, from 0 to 1 increasing from west to east, bottom to top and north to south.
@@ -321,7 +365,7 @@ pub enum ServerboundPlayPacket {
         sequence: types::VarInt,      // Block change sequence number
     },
     UseItem {
-        hand: types::VarInt, // Hand used for the animation. 0: main hand, 1: off hand.
+        hand: HandEnum, // Hand used for the animation. 0: main hand, 1: off hand.
         sequence: types::VarInt, // Block change sequence number
         yaw: types::Float,   // Player head rotation along the Y-Axis.
         pitch: types::Float, // Player head rotation along the X-Axis.
