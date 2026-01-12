@@ -4,7 +4,7 @@ use crate::utils::ansi::{string::AnsiString, AnsiColor, ColorMode};
 
 pub static LOGGER: Logger<'static> = Logger {
     name: "main",
-    level: 3,
+    level: 3, // 0: Error, 1: Warning, 2: Info, 3: Debug
 };
 
 pub fn get_logger() -> &'static Logger<'static> {
@@ -21,6 +21,10 @@ pub struct Logger<'a> {
 }
 
 impl<'a> Logger<'a> {
+    fn set_level(&mut self, level: u8) {
+        self.level = level;
+    }
+
     #[inline]
     fn format_time() -> String {
         let now = SystemTime::now();
@@ -32,6 +36,9 @@ impl<'a> Logger<'a> {
     }
 
     pub fn info<T: Into<AnsiString>>(&self, msg: T) {
+        if self.level < 2 {
+            return;
+        }
         let message_astr = msg.into().with_default_foreground(AnsiColor(255, 255, 255));
         // TODO: handle the case when the message has more than one line
         let message_lines = message_astr.delimiter("\n");
@@ -60,9 +67,6 @@ impl<'a> Logger<'a> {
     }
 
     pub fn error<T: Into<AnsiString>>(&self, msg: T) {
-        if self.level < 2 {
-            return;
-        }
         let message_astr = msg.into().with_default_foreground(AnsiColor(255, 0, 0));
         let message_lines = message_astr.delimiter("\n");
         for line in message_lines {
