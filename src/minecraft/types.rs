@@ -1,7 +1,6 @@
 use cesu8;
 use flate2::bufread::GzDecoder;
 use regex::Regex;
-use serde::de::value;
 
 use std::f32::consts::PI;
 use std::fmt::Debug;
@@ -2949,6 +2948,7 @@ impl PacketSerde for OptionalVarInt {}
 
 // based on https://minecraft.wiki/w/Java_Edition_protocol/Slot_data?oldid=2791742
 #[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -3062,6 +3062,7 @@ pub struct Property {
 }
 
 #[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
 pub enum DyeColor {
     White,
     Orange,
@@ -3095,6 +3096,7 @@ pub struct HiveResidentBee {
 }
 
 #[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
 pub enum StructuredComponent {
     CustomData(NBTValue),
     MaxStackSize(VarInt),
@@ -3294,6 +3296,7 @@ pub struct SingedProperty {
 
 
 #[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
 pub enum VibrationPositionSourceEnum {
     Block {
         position: Position  // The position of the block the vibration originated from.
@@ -3306,6 +3309,7 @@ pub enum VibrationPositionSourceEnum {
 
 
 #[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
 pub enum ParticleEnum {
     AngryVillager,
     Block {
@@ -3452,6 +3456,7 @@ pub enum ParticleEnum {
 
 
 #[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(VarInt)]
 pub enum EntityPose {
     Standing,
     FallFlying,
