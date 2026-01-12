@@ -169,6 +169,30 @@ impl Debug for UnsignedByte {
     }
 }
 
+impl From<u32> for UnsignedByte {
+    fn from(item: u32) -> Self {
+        Self { value: item as u8 }
+    }
+}
+
+impl Into<u32> for UnsignedByte {
+    fn into(self) -> u32 {
+        self.value as u32
+    }
+}
+
+impl From<i32> for UnsignedByte {
+    fn from(item: i32) -> Self {
+        Self { value: item as u8 }
+    }
+}
+
+impl Into<i32> for UnsignedByte {
+    fn into(self) -> i32 {
+        self.value as i32
+    }
+}
+
 impl From<u8> for UnsignedByte {
     fn from(item: u8) -> Self {
         Self { value: item }

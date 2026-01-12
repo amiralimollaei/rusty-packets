@@ -1,5 +1,5 @@
 // packet implementation based on https://minecraft.wiki/w/Java_Edition_protocol/Packets?oldid=2789623
-use crate::minecraft::types::{self, Length, VarInt};
+use crate::minecraft::types;
 use crate::utils::ansi::string::AnsiString;
 use crate::utils::logging::{get_log_level, get_logger};
 
@@ -69,7 +69,7 @@ impl RawPacket {
 
     fn parse(&self) -> (i32, Vec<u8>) {
         let stream = &mut Cursor::new(self.raw_data.clone());
-        let id = VarInt::read(stream).get_value();
+        let id = types::VarInt::read(stream).get_value();
         let mut data = Vec::new();
         stream.read_to_end(&mut data).unwrap();
         (id, data)
@@ -237,52 +237,6 @@ impl RawPacket {
         }
 
         packet
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct PacketWriter<T: Write + Seek> {
-    stream: T,
-}
-
-impl<R: Write + Seek> PacketWriter<R> {
-    #[inline]
-    pub fn from_stream(stream: R) -> Self {
-        Self { stream: stream }
-    }
-
-    pub fn finish(&mut self) {
-        // reserved for forward compatibility
-    }
-    pub fn write<T: PacketSerde, U: Into<T>>(&mut self, value: U) {
-        let value_raw: T = value.into();
-        value_raw.write(&mut self.stream);
-    }
-    pub fn write_raw_consume<T: PacketSerde>(&mut self, value: T) {
-        value.write(&mut self.stream);
-    }
-    pub fn write_raw<T: PacketSerde>(&mut self, value: &T) {
-        value.write(&mut self.stream);
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct PacketReader<T: Read + Seek> {
-    stream: T,
-}
-
-impl<S: Read + Seek> PacketReader<S> {
-    #[inline]
-    pub fn from_stream(stream: S) -> Self {
-        Self { stream: stream }
-    }
-
-    pub fn finish(&self) {
-        // Reserved for forward compatibility
-    }
-
-    pub fn read_raw<T: PacketSerde>(&mut self) -> T {
-        T::read(&mut self.stream)
     }
 }
 

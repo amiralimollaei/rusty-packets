@@ -367,6 +367,17 @@ impl PacketWritable for EntityMetadata {
 
 impl PacketSerde for EntityMetadata {}
 
+#[derive(PacketSerde, Clone, Debug)]
+#[discriminant_type(types::UnsignedByte)]
+pub enum EntityAnimationEnum {
+    SwingMainArm,
+    Undefined,
+    LeaveBed,
+    SwingOffhand,
+    CriticalEffect,
+    MagicCriticalEffect
+}
+
 // ###### Generic Clientbound Play Packet ######
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -395,7 +406,7 @@ pub enum ClientboundPlayPacket {
     },
     EntityAnimation {
         entity_id: types::VarInt, // A unique integer ID mostly used in the protocol to identify the entity.
-        animation: types::UnsignedByte, // 0->Swing main arm, 1->UNDEFINED, 2->Leave bed, 3->Swing offhand, 4->Critical effect, 5->Magic critical effect
+        animation: EntityAnimationEnum, // 0->Swing main arm, 1->UNDEFINED, 2->Leave bed, 3->Swing offhand, 4->Critical effect, 5->Magic critical effect
     },
     AwardStatistics {
         statistics: types::Array<AwardStatistic>,
