@@ -1,164 +1,15 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, GenericPacket, Packet, PacketReadable, PacketSerde, PacketWritable},
+    packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct CookieRequestPacket {
-    pub key: types::String,
-}
-
-impl Packet for CookieRequestPacket {
-    const ID: i32 = 0x00;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Debug, Clone)]
-pub struct PluginMessagePacket {
-    pub channel: types::Identifier,
-    pub data: types::UnsizedByteArray,
-}
-
-impl Packet for PluginMessagePacket {
-    const ID: i32 = 0x01;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct DisconnectPacket {
-    pub reason: types::NBTValue,
-}
-
-impl Packet for DisconnectPacket {
-    const ID: i32 = 0x02;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct ConfigurationFinishPacket;
-
-impl Packet for ConfigurationFinishPacket {
-    const ID: i32 = 0x03;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct KeepAlivePacket {
-    pub keepalive_id: types::Long,
-}
-
-impl Packet for KeepAlivePacket {
-    const ID: i32 = 0x04;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct PingPacket {
-    pub timestamp: types::Int,
-}
-
-impl Packet for PingPacket {
-    const ID: i32 = 0x05;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct ResetChatPacket;
-
-impl Packet for ResetChatPacket {
-    const ID: i32 = 0x06;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct RegistryEntry {
     pub id: types::Identifier,
-    pub data: types::Optional<types::NBTValue>
+    pub data: types::Optional<types::NBTValue>,
 }
-
-#[derive(PacketSerde, Debug, Clone)]
-pub struct RegistryDataPacket {
-    pub registry_id: types::Identifier,
-    pub entries: types::Array<RegistryEntry>,
-}
-
-impl Packet for RegistryDataPacket {
-    const ID: i32 = 0x07;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct RemoveResourcePackPacket {
-    pub uuid: types::Optional<types::UUID>,
-}
-
-impl Packet for RemoveResourcePackPacket {
-    const ID: i32 = 0x08;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct AddResourcePackPacket {
-    pub uuid: types::UUID,
-    pub url: types::String,
-    pub hash: types::String,
-    pub forced: types::Boolean,
-    pub prompt_message: types::Optional<types::NBTValue>,
-}
-
-
-impl Packet for AddResourcePackPacket {
-    const ID: i32 = 0x09;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Debug, Clone)]
-pub struct StoreCookiePacket {
-    pub key: types::Identifier,
-    pub payload: types::ByteArray,
-}
-
-impl Packet for StoreCookiePacket {
-    const ID: i32 = 0x0A;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Debug, Clone)]
-pub struct TransferPacket {
-    pub host: types::String,
-    pub port: types::VarInt,
-}
-
-impl Packet for TransferPacket {
-    const ID: i32 = 0x0B;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct FeatureFlagsPacket {
-    pub feature_flags: types::Array<types::String>
-}
-
-impl Packet for FeatureFlagsPacket {
-    const ID: i32 = 0x0C;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct RegistryTag {
@@ -169,19 +20,8 @@ pub struct RegistryTag {
 #[derive(PacketSerde, Clone, Debug)]
 pub struct RegistryTagMap {
     pub registry: types::Identifier, // Registry identifier (Vanilla expects tags for the registries minecraft:block, minecraft:item, minecraft:fluid, minecraft:entity_type, and minecraft:game_event)
-    pub tagsmap: types::Array<RegistryTag>
+    pub tagsmap: types::Array<RegistryTag>,
 }
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct UpdateTagsPacket {
-    pub tags: types::Array<RegistryTagMap>
-}
-
-impl Packet for UpdateTagsPacket {
-    const ID: i32 = 0x0D;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct ClientboundKnownPacksPacket {
@@ -191,32 +31,10 @@ pub struct ClientboundKnownPacksPacket {
 }
 
 #[derive(PacketSerde, Clone, Debug)]
-pub struct KnownServerPacksPacket {
-    pub packs: types::Array<ClientboundKnownPacksPacket>,
-}
-
-impl Packet for KnownServerPacksPacket {
-    const ID: i32 = 0x0E;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
 pub struct CustomReportDetail {
     pub title: types::String,
     pub description: types::String,
 }
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct CustomReportDetailsPacket {
-    pub details: types::Array<CustomReportDetail>,
-}
-
-impl Packet for CustomReportDetailsPacket {
-    const ID: i32 = 0x0F;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct ServerLink {
@@ -224,38 +42,65 @@ pub struct ServerLink {
     pub url: types::String,
 }
 
-#[derive(PacketSerde, Clone, Debug)]
-pub struct ServerLinksPacket {
-    pub links: types::Array<ServerLink>,
-}
-
-impl Packet for ServerLinksPacket {
-    const ID: i32 = 0x10;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
 // ###### Generic Clientbound Configuration Packet ######
 
 #[derive(PacketSerde, Clone, Debug)]
 pub enum ClientboundConfigurationPacket {
-    CookieRequest(CookieRequestPacket),
-    PluginMessage(PluginMessagePacket),
-    Disconnect(DisconnectPacket),
-    ConfigurationFinish(ConfigurationFinishPacket),
-    KeepAlive(KeepAlivePacket),
-    Ping(PingPacket),
-    ResetChat(ResetChatPacket),
-    RegistryData(RegistryDataPacket),
-    RemoveResourcePack(RemoveResourcePackPacket),
-    AddResourcePack(AddResourcePackPacket),
-    StoreCookie(StoreCookiePacket),
-    Transfer(TransferPacket),
-    FeatureFlags(FeatureFlagsPacket),
-    UpdateTags(UpdateTagsPacket),
-    KnownServerPacks(KnownServerPacksPacket),
-    CustomReportDetails(CustomReportDetailsPacket),
-    ServerLinks(ServerLinksPacket),
+    CookieRequest {
+        key: types::String,
+    },
+    PluginMessage {
+        channel: types::Identifier,
+        data: types::UnsizedByteArray,
+    },
+    Disconnect {
+        reason: types::NBTValue,
+    },
+    ConfigurationFinish,
+    KeepAlive {
+        keepalive_id: types::Long,
+    },
+    Ping {
+        timestamp: types::Int,
+    },
+    ResetChat,
+    RegistryData {
+        registry_id: types::Identifier,
+        entries: types::Array<RegistryEntry>,
+    },
+    RemoveResourcePack {
+        uuid: types::Optional<types::UUID>,
+    },
+    AddResourcePack {
+        uuid: types::UUID,
+        url: types::String,
+        hash: types::String,
+        forced: types::Boolean,
+        prompt_message: types::Optional<types::NBTValue>,
+    },
+    StoreCookie {
+        key: types::Identifier,
+        payload: types::ByteArray,
+    },
+    Transfer {
+        host: types::String,
+        port: types::VarInt,
+    },
+    FeatureFlags {
+        flags: types::Array<types::String>,
+    },
+    UpdateTags {
+        tags: types::Array<RegistryTagMap>,
+    },
+    KnownServerPacks {
+        packs: types::Array<ClientboundKnownPacksPacket>,
+    },
+    CustomReportDetails {
+        details: types::Array<CustomReportDetail>,
+    },
+    ServerLinks {
+        links: types::Array<ServerLink>,
+    },
 }
 
 impl GenericPacket for ClientboundConfigurationPacket {}

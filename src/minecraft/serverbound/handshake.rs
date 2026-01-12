@@ -1,39 +1,36 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
+    packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
 
-
 #[derive(PacketSerde, Clone, Debug)]
-pub enum HandshakeRequest {
+pub enum HandshakeRequest {  // by default enums start from zero, so we have to specify values here
     STATUS = 1,
     LOGIN = 2,
     TRANSFER = 3,
 }
 
-#[derive(PacketSerde, Clone, Debug)]
-pub struct HandshakeStartPacket {
-    protocol: types::VarInt,
-    hostname: types::String,
-    port: types::UnsignedShort,
-    next_state: HandshakeRequest,
-}
-
-impl HandshakeStartPacket {
-    #[inline]
-    pub fn new(protocol: i32, hostname: &str, port: u16, next_state: HandshakeRequest) -> Self {
-        Self {
-            protocol: protocol.into(),
-            hostname: hostname.into(),
-            port: port.into(),
-            next_state: next_state,
-        }
+pub fn new_handshake_start_packet(protocol: i32, hostname: &str, port: u16, next_state: HandshakeRequest) -> ServerboundHandshakePacket {
+    ServerboundHandshakePacket::HandshakeStart {
+        protocol: protocol.into(),
+        hostname: hostname.into(),
+        port: port.into(),
+        next_state: next_state,
     }
 }
 
-impl Packet for HandshakeStartPacket {
-    const ID: i32 = 0x00;
-    const PHASE: ConnectionState = ConnectionState::Handshaking;
+// ###### Generic Serverbound Handshake Packet ######
+
+#[derive(PacketSerde, Clone, Debug)]
+pub enum ServerboundHandshakePacket {
+    HandshakeStart {
+        protocol: types::VarInt,
+        hostname: types::String,
+        port: types::UnsignedShort,
+        next_state: HandshakeRequest,
+    },
 }
+
+impl GenericPacket for ServerboundHandshakePacket {}

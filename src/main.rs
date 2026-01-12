@@ -8,7 +8,7 @@ use minecraft::application::Client;
 
 fn main() {
     // initialize the client
-    let mut client = Client::new("localhost", 55916, "SimitarXYZ");
+    let mut client = Client::new("localhost", 55916, "Entity");
     client.connect();
     /*
     let statusresponse = client.status_request();

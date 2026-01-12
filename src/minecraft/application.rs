@@ -5,19 +5,26 @@ use std::net::{TcpStream, ToSocketAddrs};
 
 use std::time::Duration;
 
+use crate::minecraft::clientbound::status::deseralize_status_response;
 use crate::minecraft::packet::GenericPacket;
+use crate::minecraft::serverbound::configuration::ServerboundKnownPack;
+use crate::minecraft::types::{Byte, Optional, VarInt};
 
-use super::clientbound::ClientboundHandshakePacket;
-use super::clientbound::ClientboundStatusPacket;
-use super::clientbound::ClientboundLoginPacket;
 use super::clientbound::ClientboundConfigurationPacket;
+use super::clientbound::ClientboundHandshakePacket;
+use super::clientbound::ClientboundLoginPacket;
 use super::clientbound::ClientboundPlayPacket;
+use super::clientbound::ClientboundStatusPacket;
 
+use super::serverbound::ServerboundConfigurationPacket;
+use super::serverbound::ServerboundHandshakePacket;
+use super::serverbound::ServerboundLoginPacket;
+use super::serverbound::ServerboundPlayPacket;
+use super::serverbound::ServerboundStatusPacket;
+
+use super::packet::{ConnectionState, PacketSendRecv, set_compression_threshold};
 use super::serverbound::configuration::ClientMainHand;
-use super::packet::{
-    ConnectionState, Packet, RawPacket, PacketSendRecv, set_threshold,
-};
-use super::{PROTOCOL_VERSION, serverbound, clientbound, types};
+use super::{PROTOCOL_VERSION, clientbound, serverbound, types};
 
 use super::super::utils::logging::get_logger;
 
@@ -112,18 +119,25 @@ impl Client {
         let mut stream = connect(hostname, port);
 
         // send handshake start packet
-        serverbound::handshake::HandshakeStartPacket::new(
-            PROTOCOL_VERSION,
-            hostname,
-            port,
-            serverbound::handshake::HandshakeRequest::STATUS,
-        ).send(&mut stream);
+        ServerboundHandshakePacket::HandshakeStart {
+            protocol: PROTOCOL_VERSION.into(),
+            hostname: hostname.into(),
+            port: port.into(),
+            next_state: serverbound::handshake::HandshakeRequest::STATUS,
+        }
+        .send(&mut stream);
 
         // send status request packet to get the server's motd
-        serverbound::status::StatusRequestPacket.send(&mut stream);
+        ServerboundStatusPacket::StatusRequest.send(&mut stream);
 
         // the next packet the server sends us must be a status reponse packet
-        clientbound::status::StatusResponsePacket::recv(&mut stream).deseralize()
+        if let ClientboundStatusPacket::StatusResponse { field_status } =
+            ClientboundStatusPacket::recv(&mut stream)
+        {
+            deseralize_status_response(field_status.get_value())
+        } else {
+            panic!()
+        }
     }
 
     pub fn get_state(&self) -> ConnectionState {
@@ -159,12 +173,12 @@ impl Client {
         assert_eq!(self.state, ConnectionState::Handshaking);
 
         // send handshake start packet
-        serverbound::handshake::HandshakeStartPacket::new(
-            PROTOCOL_VERSION,
-            self.hostname.as_str(),
-            self.port,
-            serverbound::handshake::HandshakeRequest::LOGIN,
-        )
+        ServerboundHandshakePacket::HandshakeStart {
+            protocol: PROTOCOL_VERSION.into(),
+            hostname: self.hostname.as_str().into(),
+            port: self.port.into(),
+            next_state: serverbound::handshake::HandshakeRequest::LOGIN,
+        }
         .send(stream);
 
         self.state = ConnectionState::Login;
@@ -174,7 +188,7 @@ impl Client {
         assert_eq!(self.state, ConnectionState::Login);
 
         // send login start packet
-        serverbound::login::LoginStartPacket {
+        ServerboundLoginPacket::LoginStart {
             username: self.username.clone().into(),
             uuid: 0.into(),
         }
@@ -183,55 +197,54 @@ impl Client {
         // login phase loop
         loop {
             // read one packet from the stream and process
-            match ClientboundLoginPacket::recv(stream) {
-                ClientboundLoginPacket::Disconnect(packet) => {
+            let packet = ClientboundLoginPacket::recv(stream);
+            match &packet {
+                ClientboundLoginPacket::Disconnect { reason } => {
                     get_logger().error(format!("Login Failed!: {:?}", packet));
                     panic!()
-                },
-                ClientboundLoginPacket::EncryptionRequest(packet) => {
-                    if packet.should_authenticate.into() {
-                        get_logger().error(format!("Online mode is not suported!"));
+                }
+                ClientboundLoginPacket::EncryptionRequest { server_id, public_key, verify_token, should_authenticate } => {
+                    if should_authenticate.get_value() {
+                        get_logger().error(format!("Online mode is not supported!"));
                     }
-                    get_logger().error(format!("Encryption is not suported: {:?}", packet));
+                    get_logger().error(format!("Encryption is not supported: {:?}", packet));
                     panic!()
-                },
-                ClientboundLoginPacket::LoginSuccess(packet) => {
-                    get_logger().info(format!(
-                        "Login Finished! properties:{:?}",
-                        packet.properties
-                    ));
+                }
+                ClientboundLoginPacket::LoginSuccess { uuid, username, properties} => {
+                    get_logger().info(format!("Login Success: {:?}", packet));
                     // send login acknowledged packet and move on to configuration state
-                    serverbound::login::LoginAcknowledgedPacket.send(stream);
+                    ServerboundLoginPacket::LoginAcknowledged.send(stream);
                     self.state = ConnectionState::Configuration;
                     break;
-                },
-                ClientboundLoginPacket::SetCompression(packet) => {
+                }
+                ClientboundLoginPacket::SetCompression { threshold } => {
                     // set global compression threshold
-                    set_threshold(packet.threshold.into());
-                    get_logger().info(format!(
-                        "Set Compression: threshold={}",
-                        packet.threshold.get_value()
-                    ));
-                },
-                ClientboundLoginPacket::PluginRequest(packet) => {
+                    set_compression_threshold(threshold.get_value());
+                    get_logger().info(format!("Set Compression: threshold={}", threshold.get_value()));
+                }
+                ClientboundLoginPacket::PluginRequest { message_id, channel: _, data: _ } => {
                     // Unlike plugin messages in "play" mode, these messages follow a lock-step request/response scheme,
                     // where the client is expected to respond to a request indicating whether it understood. The
                     // notchian client always responds that it hasn't understood, and sends an empty payload.
 
                     get_logger().info(format!("LoginPluginRequestPacket: {:?}", packet));
 
-                    serverbound::login::LoginPluginResponsePacket {
-                        message_id: packet.message_id.clone(),
+                    ServerboundLoginPacket::LoginPluginResponse {
+                        message_id: message_id.clone(),
                         successful: false.into(),
                         data: Vec::new().into(),
                     }
                     .send(stream);
-                },
-                ClientboundLoginPacket::CookieRequest(packet) => {
+                }
+                ClientboundLoginPacket::CookieRequest { key } => {
                     get_logger().warn(format!("LoginCookieRequest: {:?}", packet));
 
-                    serverbound::login::CookieResponsePacket::new(packet.key.into(), None).send(stream);
-                },
+                    ServerboundLoginPacket::CookieResponse { 
+                        key: key.clone(), 
+                        payload: Optional::None
+                    }
+                    .send(stream);
+                }
             }
         }
     }
@@ -246,13 +259,13 @@ impl Client {
         // }.send(stream);
 
         // send a default client information packet, otherwise we might not be able to join
-        serverbound::configuration::ClientInformationPacket {
+        ServerboundConfigurationPacket::ClientInformation {
             locale: self.get_locale().into(),
             view_distance: self.get_view_distance().into(),
-            chat_mode: (serverbound::configuration::ClientChatMode::Enabled as i32).into(),
+            chat_mode: serverbound::configuration::ClientChatMode::Enabled,
             chat_colors: true.into(),
             skin_parts: 0x7F.into(),
-            main_hand: (self.get_main_hand() as i32).into(),
+            main_hand: self.get_main_hand(),
             text_filtering: false.into(),
             allow_server_listings: self.allows_server_listings().into(),
         }
@@ -261,78 +274,78 @@ impl Client {
         // configuration phase loop
         loop {
             // read one packet from the stream and process
-            match ClientboundConfigurationPacket::recv(stream) {
-                ClientboundConfigurationPacket::CookieRequest(packet) => {
+            let packet = ClientboundConfigurationPacket::recv(stream);
+            match &packet {
+                ClientboundConfigurationPacket::CookieRequest { key } => {
                     get_logger().warn(format!("CookieRequestPacket: {:?}", packet));
-                    serverbound::configuration::CookieResponsePacket {
-                        key: packet.key,
-                        payload: types::Optional::None,
-                    }.send(stream);
-                },
-                ClientboundConfigurationPacket::PluginMessage(packet) => {
+                    ServerboundConfigurationPacket::CookieResponse {
+                        key: key.clone(),
+                        payload: Optional::None,
+                    }
+                    .send(stream);
+                }
+                ClientboundConfigurationPacket::PluginMessage { channel, data } => {
                     get_logger().warn(format!("Ignored PluginMessagePacket: {:?}", packet))
-                },
-                ClientboundConfigurationPacket::Disconnect(packet) => {
-                    get_logger().error(format!("Configuration Failed: {:?}", packet.reason));
+                }
+                ClientboundConfigurationPacket::Disconnect { reason } => {
+                    get_logger().error(format!("Configuration Failed: {:?}", reason));
                     panic!();
-                },
-                ClientboundConfigurationPacket::ConfigurationFinish(packet) => {
+                }
+                ClientboundConfigurationPacket::ConfigurationFinish => {
                     get_logger().info(format!("Configuration Finished!: {:?}", packet));
                     // send finish configuration acknowledged packet
-                    serverbound::configuration::AcknowledgeFinishConfigurationPacket.send(stream);
+                    ServerboundConfigurationPacket::AcknowledgeFinishConfiguration.send(stream);
                     // set state to play
                     self.state = ConnectionState::Play;
                     break;
-                },
-                ClientboundConfigurationPacket::KeepAlive(packet) => {
+                }
+                ClientboundConfigurationPacket::KeepAlive { keepalive_id } => {
                     // respond to keepalive packet
-                    serverbound::configuration::ServerboundKeepAlivePacket {
-                        keepalive_id: packet.keepalive_id,
-                    }.send(stream);
-                },
-                ClientboundConfigurationPacket::Ping(packet) => {
+                    ServerboundConfigurationPacket::ServerboundKeepAlive{
+                        keepalive_id: *keepalive_id,
+                    }
+                    .send(stream);
+                }
+                ClientboundConfigurationPacket::Ping { timestamp } => {
                     // respond to keepalive packet
-                    serverbound::configuration::PongPacket {
-                        timestamp: packet.timestamp,
-                    }.send(stream);
-                },
-                ClientboundConfigurationPacket::ResetChat(packet) => {
+                    ServerboundConfigurationPacket::Pong{
+                        timestamp: *timestamp,
+                    }
+                    .send(stream);
+                }
+                ClientboundConfigurationPacket::ResetChat => {
                     get_logger().info(format!("ResetChatPacket: {:?}", packet));
-                },
-                ClientboundConfigurationPacket::RegistryData(packet) => {
+                }
+                ClientboundConfigurationPacket::RegistryData { registry_id, entries} => {
                     get_logger().warn(format!(
                         "Ignored registry data packet: {:?}",
-                        packet.registry_id
+                        registry_id
                     ));
-                },
-                ClientboundConfigurationPacket::RemoveResourcePack(packet) => {
-                    get_logger().warn(format!(
-                        "Ignored remove resource pack packet: {:?}",
-                        packet
-                    ));
-                },
-                ClientboundConfigurationPacket::AddResourcePack(packet) => {
-                    get_logger().warn(format!(
-                        "Ignored add resource pack packet: {:?}",
-                        packet
-                    ));
-                },
-                ClientboundConfigurationPacket::StoreCookie(packet) => {
+                }
+                ClientboundConfigurationPacket::RemoveResourcePack { uuid } => {
+                    get_logger().warn(format!("Ignored remove resource pack packet: {:?}", packet));
+                }
+                ClientboundConfigurationPacket::AddResourcePack { uuid, url, hash, forced, prompt_message } => {
+                    get_logger().warn(format!("Ignored add resource pack packet: {:?}", packet));
+                }
+                ClientboundConfigurationPacket::StoreCookie { key, payload } => {
                     get_logger().warn(format!("Ignored StoreCookiePacket: {:?}", packet));
-                },
-                ClientboundConfigurationPacket::Transfer(packet) => todo!("transfer packet is not supported, but got: {:?}", packet),
-                ClientboundConfigurationPacket::FeatureFlags(packet) => {
-                    get_logger().info(format!("Feature Flags: {:?}", packet.feature_flags));
-                },
-                ClientboundConfigurationPacket::UpdateTags(packet) => {
+                }
+                ClientboundConfigurationPacket::Transfer { host, port} => {
+                    todo!("transfer packet is not supported, but got: {:?}", packet)
+                }
+                ClientboundConfigurationPacket::FeatureFlags { flags } => {
+                    get_logger().info(format!("Feature Flags: {:?}", flags));
+                }
+                ClientboundConfigurationPacket::UpdateTags { tags } => {
                     get_logger().warn(format!("Ignored UpdateTagsPacket: {:?}", packet));
-                },
-                ClientboundConfigurationPacket::KnownServerPacks(packet) => {
-                    get_logger().info(format!("Known Server Packs: {:?}", packet.packs));
+                }
+                ClientboundConfigurationPacket::KnownServerPacks { packs } => {
+                    get_logger().info(format!("Known Server Packs: {:?}", packs));
 
                     // respond with the default notchain response
-                    serverbound::configuration::KnownClientPacksPacket {
-                        packs: vec![serverbound::configuration::ServerboundKnownPacksPacket {
+                    ServerboundConfigurationPacket::KnownClientPacks {
+                        packs: vec![ServerboundKnownPack {
                             namespace: "minecraft".into(),
                             id: "core".into(),
                             version: "1.21.1".into(),
@@ -340,61 +353,29 @@ impl Client {
                         .into(),
                     }
                     .send(stream);
-                },
-                ClientboundConfigurationPacket::CustomReportDetails(packet) => {
-                    get_logger().info(format!("Custom Report Details: {:?}", packet.details));
-                },
-                ClientboundConfigurationPacket::ServerLinks(packet) => {
-                    get_logger().info(format!("Server Links: {:?}", packet.links));
-                },
+                }
+                ClientboundConfigurationPacket::CustomReportDetails { details } => {
+                    get_logger().info(format!("Custom Report Details: {:?}", details));
+                }
+                ClientboundConfigurationPacket::ServerLinks { links } => {
+                    get_logger().info(format!("Server Links: {:?}", links));
+                }
             }
         }
     }
 
-    pub fn execute_synchronize_player_position_packet(
-        &mut self,
-        packet: &clientbound::play::SynchronizePlayerPositionPacket,
-    ) {
-        let flags_byte: i8 = packet.flags.into();
-        self.location.x = if (flags_byte & 0x01) == 0 {
-            packet.location.x.get_value()
-        } else {
-            self.location.x + packet.location.x.get_value()
-        };
-        self.location.y = if (flags_byte & 0x02) == 0 {
-            packet.location.y.get_value()
-        } else {
-            self.location.y + packet.location.y.get_value()
-        };
-        self.location.z = if (flags_byte & 0x04) == 0 {
-            packet.location.z.get_value()
-        } else {
-            self.location.z + packet.location.z.get_value()
-        };
-        self.location.yaw = if (flags_byte & 0x08) == 0 {
-            packet.location.yaw.get_value()
-        } else {
-            self.location.yaw + packet.location.yaw.get_value()
-        };
-        self.location.pitch = if (flags_byte & 0x10) == 0 {
-            packet.location.pitch.get_value()
-        } else {
-            self.location.pitch + packet.location.pitch.get_value()
-        };
-    }
-
     fn process_play_bundle_packets(&mut self, bundle_packets: Vec<ClientboundPlayPacket>) {
         for packet in bundle_packets {
-            match packet { 
-                ClientboundPlayPacket::ChangeDifficulty(packet) => {
+            match &packet {
+                ClientboundPlayPacket::ChangeDifficulty { difficulty, is_locked} => {
                     get_logger().info(format!("Difficulty Changed: {:?}", packet));
-                },
-                ClientboundPlayPacket::SetHeldItem(packet) => {
+                }
+                ClientboundPlayPacket::SetHeldItem { slot } => {
                     get_logger().info(format!("Held Slot Changed: {:?}", packet));
-                },
-                ClientboundPlayPacket::SpawnEntity(packet) => {
+                }
+                ClientboundPlayPacket::SpawnEntity { entity_id, entity_uuid, entity_type, position, pitch, yaw, head_yaw, data, velocity} => {
                     get_logger().info(format!("SpawnEntityPacket: {:?}", packet));
-                },
+                }
                 packet => {
                     let id = packet.get_id();
                     // avoid spamming the logger with the same message
@@ -423,45 +404,71 @@ impl Client {
             // read one packet from the stream
             let packet = ClientboundPlayPacket::recv(stream);
 
-            match packet {
+            match &packet {
                 // packets that are bundled when processing
-                ClientboundPlayPacket::BundleDelimiter(packet) => {
+                ClientboundPlayPacket::BundleDelimiter => {
                     get_logger().debug(format!("BundleDelimiterPacket"));
                     self.process_play_bundle_packets(bundle_packets);
                     bundle_packets = Vec::new();
                 }
-                
+
                 // packets that are not bundled when processing
-                ClientboundPlayPacket::SynchronizePlayerPosition(packet) => {
-                    self.execute_synchronize_player_position_packet(&packet);
+                ClientboundPlayPacket::SynchronizePlayerPosition { location, flags, teleport_id} => {
+                    let flags_byte: i8 = flags.get_value();
+                    self.location.x = if (flags_byte & 0x01) == 0 {
+                        location.x.get_value()
+                    } else {
+                        self.location.x + location.x.get_value()
+                    };
+                    self.location.y = if (flags_byte & 0x02) == 0 {
+                        location.y.get_value()
+                    } else {
+                        self.location.y + location.y.get_value()
+                    };
+                    self.location.z = if (flags_byte & 0x04) == 0 {
+                        location.z.get_value()
+                    } else {
+                        self.location.z + location.z.get_value()
+                    };
+                    self.location.yaw = if (flags_byte & 0x08) == 0 {
+                        location.yaw.get_value()
+                    } else {
+                        self.location.yaw + location.yaw.get_value()
+                    };
+                    self.location.pitch = if (flags_byte & 0x10) == 0 {
+                        location.pitch.get_value()
+                    } else {
+                        self.location.pitch + location.pitch.get_value()
+                    };
+
                     get_logger().info(format!("Teleported by server: {:?}", self.location));
                     // send teleport confirmation packet
-                    serverbound::play::ConfirmTeleportationPacket {
-                        teleport_id: packet.teleport_id.clone(),
+                    ServerboundPlayPacket::ConfirmTeleportation {
+                        teleport_id: teleport_id.clone(),
                     }
                     .send(stream);
-                },
+                }
 
                 // excluded from bundle delimiter because the server closes the connection after this packet
-                ClientboundPlayPacket::Disconnect(packet) => {
-                    get_logger().error(format!("Disconnected: {:?}", packet.reason));
+                ClientboundPlayPacket::Disconnect { reason } => {
+                    get_logger().error(format!("Disconnected: {:?}", reason));
                     self.state = ConnectionState::Handshaking;
                     break;
                 }
 
-                ClientboundPlayPacket::KeepAlive(packet) => {
+                ClientboundPlayPacket::KeepAlive { keepalive_id} => {
                     // respond to keepalive packet
-                    serverbound::play::KeepAlivePacket {
-                        keepalive_id: packet.keepalive_id.clone(),
+                    ServerboundPlayPacket::KeepAlive {
+                        keepalive_id: keepalive_id.clone(),
                     }
                     .send(stream);
                 }
 
-                ClientboundPlayPacket::Login(packet) => {
+                ClientboundPlayPacket::Login { data } => {
                     get_logger().info(format!("Successfully Logged In!: {:?}", packet));
                 }
 
-                ClientboundPlayPacket::PlayerAbilities(packet) => {
+                ClientboundPlayPacket::PlayerAbilities { flags, flying_speed, field_of_view_modifier} => {
                     get_logger().info(format!("Player Abilities: {:?}", packet));
                 }
 

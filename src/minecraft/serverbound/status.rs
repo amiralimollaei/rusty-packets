@@ -1,26 +1,16 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
+    packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
 
+// ###### Generic Serverbound Status Packet ######
 
-#[derive(PacketSerde, Debug, Clone)]
-pub struct StatusRequestPacket;
-
-impl Packet for StatusRequestPacket {
-    const ID: i32 = 0x00;
-    const PHASE: ConnectionState = ConnectionState::Status;
+#[derive(PacketSerde, Clone, Debug)]
+pub enum ServerboundStatusPacket {
+    StatusRequest,
+    Ping { timestamp: types::Long },
 }
 
-
-#[derive(PacketSerde, Debug, Clone)]
-pub struct PingPacket {
-    pub timestamp: types::Long,
-}
-
-impl Packet for PingPacket {
-    const ID: i32 = 0x01;
-    const PHASE: ConnectionState = ConnectionState::Status;
-}
+impl GenericPacket for ServerboundStatusPacket {}

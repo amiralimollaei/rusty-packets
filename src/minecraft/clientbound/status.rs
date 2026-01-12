@@ -1,8 +1,11 @@
 use packet_serde_derive::PacketSerde;
 
-use crate::minecraft::{
-    packet::{ConnectionState, GenericPacket, Packet, PacketReadable, PacketSerde, PacketWritable},
-    types,
+use crate::{
+    minecraft::{
+        packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
+        types,
+    },
+    utils::logging::get_logger,
 };
 
 use base64::prelude::*;
@@ -11,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::utils::parce_text_component;
-
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Version {
@@ -66,7 +68,7 @@ impl Base64Image {
                 match BASE64_STANDARD.decode(base64data) {
                     Ok(bytes) => Ok(bytes),
                     Err(e) => {
-                        println!("{}", e.to_string());
+                        get_logger().error(format!("Malformed base64: {}", e.to_string()).as_str());
                         Err(Base64DecodeError)
                     }
                 }
@@ -134,40 +136,16 @@ impl StatusResponse {
     }
 }
 
-#[derive(PacketSerde, Debug, Clone)]
-pub struct StatusResponsePacket {
-    pub field_status: types::String,
+pub fn deseralize_status_response(json_string: String) -> StatusResponse {
+    StatusResponse::from_json(json_string.as_str())
 }
-
-impl StatusResponsePacket {
-    pub fn deseralize(&self) -> StatusResponse {
-        StatusResponse::from_json(self.field_status.to_string().as_str())
-    }
-}
-
-impl Packet for StatusResponsePacket {
-    const ID: i32 = 0x00;
-    const PHASE: ConnectionState = ConnectionState::Status;
-}
-
-
-#[derive(PacketSerde, Debug, Clone)]
-pub struct PongPacket {
-    pub timestamp: types::Long,
-}
-
-impl Packet for PongPacket {
-    const ID: i32 = 0x01;
-    const PHASE: ConnectionState = ConnectionState::Status;
-}
-
 
 // ###### Generic Clientbound Status Packet ######
 
 #[derive(PacketSerde, Debug, Clone)]
 pub enum ClientboundStatusPacket {
-    Response(StatusResponsePacket),
-    Pong(PongPacket)
+    StatusResponse { field_status: types::String },
+    Pong { timestamp: types::Long },
 }
 
 impl GenericPacket for ClientboundStatusPacket {}

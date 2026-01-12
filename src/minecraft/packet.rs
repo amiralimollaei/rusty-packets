@@ -107,7 +107,7 @@ impl RawPacket {
     // https://wiki.vg/Protocol#Packet_format
     pub fn write_with_compression(&mut self, stream: &mut impl Write) {
         let mut packet_cmp = self.get_compressed_packet();
-        let is_compressed = self.raw_data.len() > get_threshold() as usize;
+        let is_compressed = self.raw_data.len() > get_compression_threshold() as usize;
         let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::with_capacity(packet_cmp.len()));
         // write data length as varint
         types::Length::from_i32(if is_compressed {
@@ -136,7 +136,7 @@ impl RawPacket {
     }
 
     pub fn send(&mut self, stream: &mut impl Write) {
-        let threshold: i32 = get_threshold();
+        let threshold: i32 = get_compression_threshold();
         if threshold > 0 {
             self.write_with_compression(stream)
         } else {
@@ -158,10 +158,13 @@ impl RawPacket {
         let packet_length = types::Length::read(stream).get_value();
         // read packet
         let mut data: Vec<u8> = Vec::with_capacity(packet_length as usize);
-        stream
-            .take(packet_length as u64)
-            .read_to_end(&mut data)
-            .unwrap();
+        for _ in 0..packet_length {
+            let mut bytes: [u8; 1] = [0];
+            stream
+                .read_exact(&mut bytes)
+                .expect("Error reading packet data.");
+            data.write_all(&mut bytes).unwrap();
+        } 
         // construct instance
         Self::new(data)
     }
@@ -217,7 +220,7 @@ impl RawPacket {
 
     #[inline]
     pub fn recv(stream: &mut impl Read) -> Self {
-        let compressed: bool = get_threshold() > 0;
+        let compressed: bool = get_compression_threshold() > 0;
         let packet = if compressed {
             Self::from_stream_with_compression(stream)
         } else {
@@ -283,75 +286,19 @@ impl<S: Read + Seek> PacketReader<S> {
     }
 }
 
-static mut THRESHOLD: i32 = -1;
+static mut COMPRESSION_THRESHOLD: i32 = -1;
 
-pub fn get_threshold() -> i32 {
-    unsafe { THRESHOLD }
+pub fn get_compression_threshold() -> i32 {
+    unsafe { COMPRESSION_THRESHOLD }
 }
 
-pub fn set_threshold(thr: i32) {
-    unsafe { THRESHOLD = thr }
-}
-
-pub trait Packet {
-    const ID: i32;
-    const PHASE: ConnectionState;
+pub fn set_compression_threshold(thr: i32) {
+    unsafe { COMPRESSION_THRESHOLD = thr }
 }
 
 pub trait PacketSendRecv {
     fn recv(stream: &mut impl Read) -> Self;
     fn send(&self, stream: &mut impl Write);
-}
-
-impl<U: Packet + PacketSerde> PacketSendRecv for U {
-    fn recv(stream: &mut impl Read) -> Self {
-        let raw_stream = &mut RawPacket::recv(stream).raw_stream();
-        let packet_id = VarInt::read(raw_stream).get_value();
-        assert!(packet_id == Self::ID);
-        Self::read(raw_stream)
-    }
-
-    fn send(&self, stream: &mut impl Write) {
-        // create a memory stream
-        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        // write packet data
-        VarInt::from_i32(Self::ID).write(&mut packet_stream);
-        self.write(&mut packet_stream);
-        // go back to the start of the memory stream
-        packet_stream
-            .seek(SeekFrom::Start(0))
-            .expect("Error seeking packet data.");
-        // read the memory stream
-        let mut packet_data = Vec::new();
-        packet_stream
-            .read_to_end(&mut packet_data)
-            .expect("Error reading packet data.");
-        // send the packet
-        RawPacket {
-            raw_data: packet_data,
-        }
-        .send(stream);
-    }
-}
-
-pub trait PacketIn<T: Read + Seek>: Packet {
-    fn read(reader: &mut PacketReader<T>) -> Self;
-}
-
-impl<T: Read + Seek, U: Packet + PacketSerde> PacketIn<T> for U {
-    fn read(reader: &mut PacketReader<T>) -> Self {
-        reader.read_raw::<Self>()
-    }
-}
-
-pub trait PacketOut<T: Write + Seek>: Packet {
-    fn write(&self, writer: &mut PacketWriter<T>);
-}
-
-impl<T: Write + Seek, U: Packet + PacketSerde> PacketOut<T> for U {
-    fn write(&self, writer: &mut PacketWriter<T>) {
-        writer.write_raw::<Self>(&self);
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

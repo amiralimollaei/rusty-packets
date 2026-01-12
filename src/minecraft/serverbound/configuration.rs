@@ -1,123 +1,74 @@
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
-    packet::{ConnectionState, Packet, PacketSerde, PacketReadable, PacketWritable},
+    packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
 
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(PacketSerde, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ClientChatMode {
-    Enabled = 0,
-    CommandsOnly = 1,
-    Hidden = 2,
+    Enabled,
+    CommandsOnly,
+    Hidden,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(PacketSerde, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ClientMainHand {
-    Left = 0,
-    Right = 1,
+    Left,
+    Right,
 }
 
 #[derive(PacketSerde, Clone, Debug)]
-pub struct ClientInformationPacket {
-    pub locale: types::String,                 // String: max 16 characters
-    pub view_distance: types::Byte,            // Byte: for some reason this HAD TO BE SIGNED
-    pub chat_mode: types::VarInt, // VarInt Enum: 0: enabled, 1: commands only, 2: hidden
-    pub chat_colors: types::Boolean, // Boolean: can the chat be colored?
-    pub skin_parts: types::UnsignedByte, // Unsigned Byte: parts of skin that are visible (7 bit bitflag)
-    pub main_hand: types::VarInt,        // VarInt Enum: 0: left, 1: right
-    pub text_filtering: types::Boolean, // Boolean: Enables filtering of text on signs and written book titles
-    pub allow_server_listings: types::Boolean, // Boolean: Servers usually list online players, this option should let you not show up in that list
-}
-
-impl Packet for ClientInformationPacket {
-    const ID: i32 = 0x00;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct CookieResponsePacket {
-    pub key: types::String,
-    pub payload: types::Optional<types::ByteArray>,
-}
-
-impl Packet for CookieResponsePacket {
-    const ID: i32 = 0x01;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct ServerboundPluginMessagePacket {
-    pub channel: types::Identifier,
-    pub data: types::UnsizedByteArray,
-}
-
-impl Packet for ServerboundPluginMessagePacket {
-    const ID: i32 = 0x02;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Copy)]
-pub struct AcknowledgeFinishConfigurationPacket;
-
-impl Packet for AcknowledgeFinishConfigurationPacket {
-    const ID: i32 = 0x03;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct ServerboundKeepAlivePacket {
-    pub keepalive_id: types::Long,
-}
-
-impl Packet for ServerboundKeepAlivePacket {
-    const ID: i32 = 0x04;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct PongPacket {
-    pub timestamp: types::Int,
-}
-
-impl Packet for PongPacket {
-    const ID: i32 = 0x05;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct ResourcePackResponsePacket {
-    pub uuid: types::UUID,
-    // TODO: make varint enum
-    pub result: types::VarInt, // VarInt Enum: 0: accepted, 1: declined, 2: failed download, 3: successfully loaded etc.
-}
-
-impl Packet for ResourcePackResponsePacket {
-    const ID: i32 = 0x06;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
-}
-
-
-#[derive(PacketSerde, Clone, Debug)]
-pub struct ServerboundKnownPacksPacket {
+pub struct ServerboundKnownPack {
     pub namespace: types::String,
     pub id: types::String,
     pub version: types::String,
 }
 
 #[derive(PacketSerde, Clone, Debug)]
-pub struct KnownClientPacksPacket {
-    pub packs: types::Array<ServerboundKnownPacksPacket>,
+pub enum ResourcePackResult {
+    Accepted,
+    Declined,
+    FailedDownload,
+    SuccessfullyLoaded,
 }
 
-impl Packet for KnownClientPacksPacket {
-    const ID: i32 = 0x07;
-    const PHASE: ConnectionState = ConnectionState::Configuration;
+// ###### Generic Serverbound Configuration Packet ######
+
+#[derive(PacketSerde, Clone, Debug)]
+pub enum ServerboundConfigurationPacket {
+    ClientInformation {
+        locale: types::String,                  // String: max 16 characters
+        view_distance: types::Byte,             // Byte: for some reason this HAD TO BE SIGNED
+        chat_mode: ClientChatMode,              // VarInt Enum: 0: enabled, 1: commands only, 2: hidden
+        chat_colors: types::Boolean,            // Boolean: can the chat be colored?
+        skin_parts: types::UnsignedByte,        // Unsigned Byte: parts of skin that are visible (7 bit bitflag)
+        main_hand: ClientMainHand,              // VarInt Enum: 0: left, 1: right
+        text_filtering: types::Boolean,         // Boolean: Enables filtering of text on signs and written book titles
+        allow_server_listings: types::Boolean,  // Boolean: Servers usually list online players, this option should let you not show up in that list
+    },
+    CookieResponse {
+        key: types::String,
+        payload: types::Optional<types::ByteArray>,
+    },
+    ServerboundPluginMessage {
+        channel: types::Identifier,
+        data: types::UnsizedByteArray,
+    },
+    AcknowledgeFinishConfiguration,
+    ServerboundKeepAlive {
+        keepalive_id: types::Long,
+    },
+    Pong {
+        timestamp: types::Int,
+    },
+    ResourcePackResponse {
+        uuid: types::UUID,
+        result: ResourcePackResult,  // VarInt Enum: 0: accepted, 1: declined, 2: failed download, 3: successfully loaded etc.
+    },
+    KnownClientPacks {
+        packs: types::Array<ServerboundKnownPack>,
+    },
 }
+
+impl GenericPacket for ServerboundConfigurationPacket {}
