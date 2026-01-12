@@ -2,29 +2,31 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::utils::ansi::{string::AnsiString, AnsiColor, ColorMode};
 
-pub static LOGGER: Logger<'static> = Logger {
-    name: "main",
-    level: 3, // 0: Error, 1: Warning, 2: Info, 3: Debug
+static LOGGER: Logger<'static> = Logger {
+    name: "root",
 };
+
+static mut LOG_LEVEL: u8 = 2;  // 0: Error, 1: Warning, 2: Info, 3: Debug
 
 pub fn get_logger() -> &'static Logger<'static> {
     &LOGGER
 }
 
 pub fn get_log_level() -> u8 {
-    LOGGER.level
+    unsafe { LOG_LEVEL }
 }
 
+pub fn set_log_level(level: u8) {
+    unsafe { LOG_LEVEL = level }
+}
+
+
+#[derive(Debug)]
 pub struct Logger<'a> {
-    pub name: &'a str,
-    pub level: u8,
+    pub name: &'a str
 }
 
 impl<'a> Logger<'a> {
-    fn set_level(&mut self, level: u8) {
-        self.level = level;
-    }
-
     #[inline]
     fn format_time() -> String {
         let now = SystemTime::now();
@@ -36,11 +38,10 @@ impl<'a> Logger<'a> {
     }
 
     pub fn info<T: Into<AnsiString>>(&self, msg: T) {
-        if self.level < 2 {
+        if get_log_level() < 2 {
             return;
         }
         let message_astr = msg.into().with_default_foreground(AnsiColor(255, 255, 255));
-        // TODO: handle the case when the message has more than one line
         let message_lines = message_astr.delimiter("\n");
         for line in message_lines {
             let astr = AnsiString::new_fore(
@@ -52,7 +53,7 @@ impl<'a> Logger<'a> {
     }
 
     pub fn warn<T: Into<AnsiString>>(&self, msg: T) {
-        if self.level < 1 {
+        if get_log_level() < 1 {
             return;
         }
         let message_astr = msg.into().with_default_foreground(AnsiColor(255, 255, 0));
@@ -79,7 +80,7 @@ impl<'a> Logger<'a> {
     }
 
     pub fn debug<T: Into<AnsiString>>(&self, msg: T) {
-        if self.level < 3 {
+        if get_log_level() < 3 {
             return;
         }
         let message_astr = msg.into().with_default_foreground(AnsiColor(0, 255, 255));
@@ -94,6 +95,6 @@ impl<'a> Logger<'a> {
     }
 
     pub fn is_debug(&self) -> bool {
-        self.level > 2
+        get_log_level() > 2
     }
 }
