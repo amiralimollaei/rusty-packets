@@ -2,7 +2,7 @@ use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
-    types::{self, Byte},
+    types,
 };
 
 #[derive(PacketSerde, Clone, Debug)]
@@ -74,7 +74,7 @@ pub enum RotationEnum {
 }
 
 #[derive(PacketSerde, Clone, Debug)]
-#[discriminant_type(Byte)]
+#[discriminant_type(types::Byte)]
 pub enum DifficultyEnum {
     Peaceful,
     Easy,
