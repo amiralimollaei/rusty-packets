@@ -8,10 +8,10 @@ use std::time::Duration;
 use crate::minecraft::clientbound::status::deseralize_status_response;
 use crate::minecraft::packet::GenericPacket;
 use crate::minecraft::serverbound::configuration::ServerboundKnownPack;
-use crate::minecraft::types::{Byte, Optional, VarInt};
+use crate::minecraft::types::Optional;
 
 use super::clientbound::ClientboundConfigurationPacket;
-use super::clientbound::ClientboundHandshakePacket;
+use super::clientbound::ClientboundHandshakePacket;  // placeholder, not actually usable
 use super::clientbound::ClientboundLoginPacket;
 use super::clientbound::ClientboundPlayPacket;
 use super::clientbound::ClientboundStatusPacket;
@@ -22,9 +22,9 @@ use super::serverbound::ServerboundLoginPacket;
 use super::serverbound::ServerboundPlayPacket;
 use super::serverbound::ServerboundStatusPacket;
 
-use super::packet::{ConnectionState, PacketSendRecv, set_compression_threshold};
+use super::packet::{ConnectionState, set_compression_threshold};
 use super::serverbound::configuration::ClientMainHand;
-use super::{PROTOCOL_VERSION, clientbound, serverbound, types};
+use super::{PROTOCOL_VERSION, clientbound, serverbound};
 
 use super::super::utils::logging::get_logger;
 

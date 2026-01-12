@@ -296,11 +296,6 @@ pub fn set_compression_threshold(thr: i32) {
     unsafe { COMPRESSION_THRESHOLD = thr }
 }
 
-pub trait PacketSendRecv {
-    fn recv(stream: &mut impl Read) -> Self;
-    fn send(&self, stream: &mut impl Write);
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ConnectionState {
     Handshaking,
