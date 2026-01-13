@@ -1,6 +1,8 @@
 pub mod ansi;
 pub mod logging;
 
+use std::io::{self, Read};
+
 use ansi::{AnsiColor, AnsiGraphicMode, AnsiGraphics, string::AnsiString};
 use serde_json::{Map, Value as JsonValue};
 
@@ -11,17 +13,17 @@ pub fn read_bytes<const N: usize>(stream: &mut impl std::io::Read) -> [u8; N] {
     bytes
 }
 
-#[inline]
-pub fn read_n_bytes(n: usize, stream: &mut impl std::io::Read) -> Vec<u8> {
-    let mut bytes: Vec<u8> = Vec::with_capacity(n);
-    if n == 0 {
-        return bytes;
+pub fn read_n_bytes<S: Read, U: Into<usize>>(reader: &mut S, n: U) -> Result<Vec<u8>, io::Error> {
+    // Create a buffer to store the data.
+    let mut buffer = vec![0; n.into()];
+
+    // Attempt to read 'n' bytes into the buffer.
+    match reader.read_exact(&mut buffer) {
+        Ok(..) => {
+            Ok(buffer) // Return the buffer containing 'n' bytes.
+        }
+        Err(e) => Err(e), // Propagate any IO error.
     }
-    for _ in 0..n {
-        bytes.push(0);
-    }
-    stream.read_exact(&mut bytes).expect("ReadError");
-    bytes
 }
 
 pub fn parse_color(value: &Map<String, JsonValue>) -> Option<(u8, u8, u8)> {

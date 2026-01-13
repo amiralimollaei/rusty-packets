@@ -2289,7 +2289,7 @@ impl NBTValue {
     #[inline]
     fn read_string(stream: &mut impl Read) -> std::string::String {
         let length = u16::from_be_bytes(read_bytes(stream));
-        let bytes = read_n_bytes(length as usize, stream);
+        let bytes = read_n_bytes(stream, length).expect(READ_ERROR);
         let str = cesu8::from_cesu8(bytes.as_slice()).expect("NBT: Error decoding string value!");
         str.into_owned()
     }

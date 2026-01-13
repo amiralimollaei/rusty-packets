@@ -52,11 +52,12 @@ impl RawPacket {
         Self { raw_data: data }
     }
 
-    pub fn raw_stream(&self) -> Cursor<Vec<u8>> {
-        let mut stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        stream.write_all(&mut self.raw_data.clone()).unwrap();
-        stream.seek(SeekFrom::Start(0)).unwrap();
-        stream
+    pub fn to_stream(self) -> Cursor<Vec<u8>> {
+        Cursor::new(self.raw_data)
+    }
+
+    pub fn to_stream_mut(&mut self) -> Cursor<&mut Vec<u8>> {
+        Cursor::new(&mut self.raw_data)
     }
 
     pub fn to_string(&self) -> String {
@@ -103,7 +104,7 @@ impl RawPacket {
 
     fn get_compressed_packet(&mut self) -> Vec<u8> {
         // encode raw packet (Packet ID + Packet Data)
-        let mut compressed_packet: Vec<u8> = Vec::new();
+        let mut compressed_packet: Vec<u8> = Vec::with_capacity(self.raw_data.len());
         // compress packet id + packet data
         let mut zlib_encoder =
             ZlibEncoder::new(Cursor::new(&mut self.raw_data), Compression::default());
@@ -114,10 +115,14 @@ impl RawPacket {
     }
 
     // https://wiki.vg/Protocol#Packet_format
-    pub fn write_with_compression(&mut self, stream: &mut impl Write) {
-        let mut packet_cmp = self.get_compressed_packet();
+    pub fn write_with_compression(mut self, stream: &mut impl Write) {
         let is_compressed = self.raw_data.len() > get_compression_threshold() as usize;
-        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::with_capacity(packet_cmp.len()));
+        let mut packet_cmp = if is_compressed {
+            self.get_compressed_packet()
+        } else {
+            self.raw_data
+        };
+        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::with_capacity(packet_cmp.len() + 4));
         // write data length as varint
         types::Length::from_i32(if is_compressed {
             packet_cmp.len() as i32
@@ -129,13 +134,7 @@ impl RawPacket {
         packet_stream
             .write_all(&mut packet_cmp)
             .expect("Error writing packet data.");
-        let mut actual_packet: Vec<u8> = Vec::with_capacity(packet_stream.get_ref().len());
-        packet_stream
-            .seek(SeekFrom::Start(0))
-            .expect("Error seeking packet data.");
-        packet_stream
-            .read_to_end(&mut actual_packet)
-            .expect("Error reading packet data.");
+        let mut actual_packet: Vec<u8> = packet_stream.into_inner();
         // write actual length as varint
         types::Length::from_i32(actual_packet.len() as i32).write(stream);
         // write data length + packet id + data
@@ -144,13 +143,7 @@ impl RawPacket {
             .expect("Error writing packet data.");
     }
 
-    pub fn send(&mut self, stream: &mut impl Write) {
-        let threshold: i32 = get_compression_threshold();
-        if threshold > 0 {
-            self.write_with_compression(stream)
-        } else {
-            self.write_without_compression(stream)
-        }
+    pub fn send(mut self, stream: &mut impl Write) {
         if get_logger().is_debug() {
             get_logger().debug(
                 AnsiString::new_colorless("[")
@@ -158,6 +151,12 @@ impl RawPacket {
                     + AnsiString::new_colorless("] ")
                     + AnsiString::new_colorless(&self.to_string()),
             );
+        }
+        let compression_enbaled = get_compression_threshold() > 0;
+        if compression_enbaled {
+            self.write_with_compression(stream)
+        } else {
+            self.write_without_compression(stream)
         }
     }
 
