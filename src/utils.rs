@@ -148,6 +148,9 @@ pub fn parce_text_component_json(
     parentstyle: Option<AnsiGraphics>,
 ) -> AnsiString {
     //println!("TextComponent: {}", value);
+    if value.is_string() {
+        return AnsiString::new_colorless(value.as_str().unwrap());
+    }
     if let Some(v) = value.as_object() {
         let mut result = AnsiString::empty();
         // get text as AnsiString if exists
