@@ -14,7 +14,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::utils::parce_text_component;
+use crate::utils::parce_text_component_json;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Version {
@@ -111,7 +111,7 @@ impl StatusResponse {
     pub fn get_description_text(&self) -> String {
         match self.description.clone() {
             None => String::new(),
-            Some(value) => parce_text_component(&value, None, None)
+            Some(value) => parce_text_component_json(&value, None, None)
                 .to_string(&crate::utils::ansi::ColorMode::TrueColor),
         }
     }
