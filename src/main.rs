@@ -12,7 +12,7 @@ fn main() {
     }
 
     // initialize the client
-    let mut client = Client::new("localhost", 55916, "Entity");
+    let mut client = Client::new("localhost", 55916, "Entity1");
 
     // ping the server
     let statusresponse = client.status_request();

@@ -15,7 +15,7 @@ pub fn generic_packet_derive(input: TokenStream) -> TokenStream {
 fn impl_generic_packet(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::TokenStream {
     match &ast.data {
         Data::Enum(e) => {
-            let (get_id_impl, get_name_impl) = generate_enum_extended_impl(e, &ast.attrs);
+            let (get_id_impl, get_name_impl, get_name_by_id_impl) = generate_enum_extended_impl(e, &ast.attrs);
             quote! {
                 impl GenericPacket for #name 
                 where 
@@ -28,6 +28,10 @@ fn impl_generic_packet(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::Tok
                     fn get_name(&self) -> std::string::String {
                         #get_name_impl
                     }
+
+                    fn get_name_by_id(id: i32) -> std::string::String {
+                        #get_name_by_id_impl
+                    }
                 }
             }
         },
@@ -37,7 +41,23 @@ fn impl_generic_packet(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::Tok
     
 }
 
-fn generate_enum_extended_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+fn get_discriminant_type(attrs: &[Attribute]) -> proc_macro2::TokenStream {
+    for attr in attrs {
+        if attr.path().is_ident("discriminant_type") {
+            // Parse the tokens inside the attribute
+            let tokens = attr.parse_args::<proc_macro2::TokenStream>().ok();
+            if let Some(tokens) = tokens {
+                return tokens;
+            }
+        }
+    }
+    // Default to VarInt if no discriminant_type attribute is found
+    quote! { types::VarInt }
+}
+
+fn generate_enum_extended_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::TokenStream, proc_macro2::TokenStream, proc_macro2::TokenStream) {
+    let discriminant_type = get_discriminant_type(attrs);   
+
     let get_id_arms = e.variants.iter().enumerate().map(|(i, variant)| {
         let variant_name = &variant.ident;
         let discriminant = match &variant.discriminant {
@@ -121,5 +141,49 @@ fn generate_enum_extended_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_
         }
     };
 
-    (get_id_impl, get_name_impl)
+    let get_name_by_id_arms = e.variants.iter().enumerate().map(|(i, variant)| {
+        let variant_name = &variant.ident;
+        let discriminant = match &variant.discriminant {
+            Some((_, exp)) => {
+                exp.to_token_stream()
+            },
+            None => {
+                let enumerator = i as i32;
+                quote! { #enumerator }
+            },
+        };
+
+        match &variant.fields {
+            Fields::Named(fields) => {
+                let field_names: Vec<_> = fields.named.iter()
+                    .filter_map(|f| f.ident.as_ref())
+                    .collect();
+                quote! {
+                    #discriminant => stringify!(#variant_name).to_string(),
+                }
+            }
+            Fields::Unnamed(fields) => {
+                let field_patterns: Vec<_> = (0..fields.unnamed.len())
+                    .map(|i| quote::format_ident!("field{}", i))
+                    .collect();
+                quote! {
+                    #discriminant => stringify!(#variant_name).to_string(),
+                }
+            }
+            Fields::Unit => {
+                quote! {
+                    #discriminant => stringify!(#variant_name).to_string(),
+                }
+            }
+        }
+    });
+
+    let get_name_by_id_impl = quote! {
+        match id.into() {
+            #( #get_name_by_id_arms )*
+            val => panic!("Invalid packet ID: {:#02x}", val)
+        }
+    };
+
+    (get_id_impl, get_name_impl, get_name_by_id_impl)
 }

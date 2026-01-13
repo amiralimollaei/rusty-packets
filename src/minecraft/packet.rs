@@ -230,19 +230,15 @@ where
 {
     fn recv(stream: &mut impl Read) -> Self {
         let raw_packet = RawPacket::recv(stream);
-        let packet;
         if get_logger().is_debug() {
-            packet = Self::from_bytes(raw_packet.raw_data.clone());
             get_logger().debug(
                 AnsiString::new_colorless("[")
                     + AnsiString::new_fore("🠯", (255, 0, 0))
                     + AnsiString::new_colorless("] ")
-                    + AnsiString::new_colorless(&packet.to_string(&raw_packet)),
+                    + AnsiString::new_colorless(&Self::to_string(&raw_packet)),
             );
-        } else {
-            packet = Self::from_bytes(raw_packet.raw_data);
         }
-        packet
+        Self::from_bytes(raw_packet.raw_data)
     }
 
     fn send(&self, stream: &mut impl Write) {
@@ -255,7 +251,7 @@ where
                 AnsiString::new_colorless("[")
                     + AnsiString::new_fore("🠩", (0, 255, 0))
                     + AnsiString::new_colorless("] ")
-                    + AnsiString::new_colorless(&self.to_string(&raw_packet)),
+                    + AnsiString::new_colorless(&Self::to_string(&raw_packet)),
             );
         }
         raw_packet.send(stream);
@@ -265,16 +261,18 @@ where
 
     fn get_name(&self) -> std::string::String;
 
-    fn to_string(&self, raw_packet: &RawPacket) -> String {
+    fn get_name_by_id(id: i32) -> std::string::String;
+
+    fn to_string(raw_packet: &RawPacket) -> std::string::String {
         let (id, data) = raw_packet.parse();
         if data.len() > 100 {
             let data = &data[0..100];
             let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-            format!("{}(ID={:#02x}, DATA=[{} ...])", self.get_name(), id, data.join(" "))
+            format!("{}(ID={:#02x}, DATA=[{} ...])", Self::get_name_by_id(id), id, data.join(" "))
         } else {
             let data = &data;
             let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-            format!("{}(ID={:#02x}, DATA=[{}])", self.get_name(), id, data.join(" "))
+            format!("{}(ID={:#02x}, DATA=[{}])", Self::get_name_by_id(id), id, data.join(" "))
         }
     }
 }
