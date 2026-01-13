@@ -2,12 +2,13 @@
 use crate::minecraft::types;
 use crate::utils::ansi::string::AnsiString;
 use crate::utils::logging::get_logger;
+use crate::utils::read_n_bytes;
 
 use flate2::Compression;
 use flate2::bufread::ZlibDecoder;
 use flate2::write::ZlibEncoder;
 use std::fmt::Debug;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{BufRead, Cursor, Read, Seek, SeekFrom, Write};
 
 pub trait PacketWritable
 where
@@ -164,17 +165,9 @@ impl RawPacket {
     pub fn from_stream_without_compression(stream: &mut impl Read) -> Self {
         // read packet length as varint
         let packet_length = types::Length::read(stream).get_value();
-        // read packet
-        let mut data: Vec<u8> = Vec::with_capacity(packet_length as usize);
-        for _ in 0..packet_length {
-            let mut bytes: [u8; 1] = [0];
-            stream
-                .read_exact(&mut bytes)
-                .expect("Error reading packet data.");
-            data.write_all(&mut bytes).unwrap();
+        Self {
+            raw_data: read_n_bytes(stream, packet_length as usize).expect("Error reading packet data.")
         }
-        // construct instance
-        Self::new(data)
     }
 
     #[inline]
@@ -182,48 +175,28 @@ impl RawPacket {
         // read packet length as varint
         let packet_length = types::Length::read(stream).get_value();
         // read packet
-        let mut packet: Cursor<Vec<u8>> = Cursor::new(Vec::with_capacity(packet_length as usize));
-        for _ in 0..packet_length {
-            let mut bytes: [u8; 1] = [0];
-            stream
-                .read_exact(&mut bytes)
-                .expect("Error reading packet data.");
-            packet.write_all(&mut bytes).unwrap();
-        }
-        // go back to the start of packet
-        packet.seek(SeekFrom::Start(0)).unwrap();
+        let mut raw_packet_stream = stream.take(packet_length as u64);
         // read data length as varint
-        let data_length = types::VarInt::read(&mut packet).get_value();
+        let data_length = types::VarInt::read(&mut raw_packet_stream).get_value();
         // read the rest of packet data and decompress if needed
-
+        let is_compressed = data_length != 0;
         // store the actual decompressed packet data
-        let packet_data_and_id = if data_length != 0 {
-            // read the rest of packet and decompress
-            let mut packet_bytes: Vec<u8> = Vec::with_capacity(data_length as usize);
-            packet
-                .read_to_end(&mut packet_bytes)
+        let mut raw_data = Vec::new();
+        if is_compressed {
+            let mut raw_data_compressed = Vec::new();
+            raw_packet_stream
+                .read_to_end(&mut raw_data_compressed)
                 .expect("Error reading packet data.");
-            let mut actual_packet_id_and_data = Vec::new();
-            let mut decompress_stream = ZlibDecoder::new(Cursor::new(packet_bytes));
-            decompress_stream
-                .read_to_end(&mut actual_packet_id_and_data)
-                .expect("Error reading packet data.");
-            actual_packet_id_and_data
+            ZlibDecoder::new(Cursor::new(raw_data_compressed))
+                .read_to_end(&mut raw_data)
+                .expect("Error decompressing packet data.");
         } else {
-            // read the rest of packet and NOT decompress
-            let mut packet_bytes: Vec<u8> = Vec::new();
-            packet
-                .read_to_end(&mut packet_bytes)
+            raw_packet_stream
+                .read_to_end(&mut raw_data)
                 .expect("Error reading packet data.");
-            packet_bytes
-        };
+        }
 
-        let mut packet_stream = Cursor::new(packet_data_and_id);
-        // read the memory stream
-        let mut packet_data = Vec::new();
-        packet_stream.read_to_end(&mut packet_data).unwrap();
-
-        Self::new(packet_data)
+        Self::new(raw_data)
     }
 
     #[inline]

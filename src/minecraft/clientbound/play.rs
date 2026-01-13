@@ -572,7 +572,7 @@ pub enum ClientboundPlayPacket {
     KeepAlive {
         keepalive_id: types::Long,
     },
-    ChunkDataAndUpdateLight {
+    /*ChunkDataAndUpdateLight {
         chunk_x: types::Int, // Block coordinate divided by 16 (rounded down)
         chunk_z: types::Int, // Block coordinate divided by 16 (rounded down)
         heightmaps: types::NBTValue,
@@ -584,7 +584,8 @@ pub enum ClientboundPlayPacket {
         empty_block_light_mask: types::BitSet,
         sky_light_arrays: types::Array<types::ByteArray>,
         block_light_arrays: types::Array<types::ByteArray>,
-    },
+    },*/
+    ChunkDataAndUpdateLight(PlaceholderPacket),
     WorldEvent {
         event: types::Int,
         position: types::Position,

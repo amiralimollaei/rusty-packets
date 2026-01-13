@@ -9,7 +9,7 @@ use std::ops::Deref;
 use packet_serde_derive::PacketSerde;
 
 use super::packet::{PacketReadable, PacketWritable, PacketSerde};
-use crate::utils::{read_bytes, read_n_bytes};
+use crate::utils::{logging::get_logger, read_bytes, read_n_bytes};
 
 
 use std::{
@@ -2049,6 +2049,7 @@ pub enum NBTType {
     Compound,           // A list of named tags with variable types, Order is not guaranteed.
     IntArray,           // A length-prefixed array of signed integers. The prefix is a signed integer (thus 4 bytes) and indicates the number of 4 byte integers.
     LongArray,          // A length-prefixed array of signed longs. The prefix is a signed integer (thus 4 bytes) and indicates the number of 8 byte longs.
+    Null,               // used as a placeholder for values we cannot read
 }
 
 impl NBTType {
@@ -2067,6 +2068,7 @@ impl NBTType {
             Self::Compound => false,
             Self::IntArray => true,
             Self::LongArray => true,
+            Self::Null => true,
         }
     }
 
@@ -2085,6 +2087,7 @@ impl NBTType {
             Self::Compound => 10,
             Self::IntArray => 11,
             Self::LongArray => 12,
+            Self::Null => 255,
         }
     }
 
@@ -2118,6 +2121,7 @@ impl NBTType {
                 }
                 Self::List(Box::new(inner_types.last().unwrap().clone()))
             }
+            NBTValue::Null => Self::Null,
         }
     }
 
@@ -2144,6 +2148,7 @@ pub enum NBTValue {
     Compound(std::string::String, HashMap<std::string::String, NBTValue>),
     IntArray(Vec<i32>),
     LongArray(Vec<i64>),
+    Null,
 }
 
 impl NBTValue {
@@ -2162,6 +2167,7 @@ impl NBTValue {
             NBTValue::Compound(_, _) => false,
             NBTValue::IntArray(_) => true,
             NBTValue::LongArray(_) => true,
+            NBTValue::Null => true,
         }
     }
 
@@ -2360,7 +2366,26 @@ impl NBTValue {
                 }
                 Self::LongArray(values)
             }
-            _ => panic!("Unknown type id in NBT data"),
+            type_id => {
+                let mut buf = Vec::new();
+                stream.read_to_end(&mut buf).expect(READ_ERROR);
+                get_logger().error(
+                    format!(
+                        "Unknown type id {} in NBT data, {}",
+                        type_id,
+                        if buf.len() > 100 {
+                            let data = &buf[0..100];
+                            let data: Vec<std::string::String> = data.iter().map(|x| format!("{:02x}", x)).collect();
+                            format!("DATA=[{} ...]", data.join(" "))
+                        } else {
+                            let data = &buf;
+                            let data: Vec<std::string::String> = data.iter().map(|x| format!("{:02x}", x)).collect();
+                            format!("DATA=[{}]", data.join(" "))
+                        }
+                    )
+                );
+                NBTValue::Null
+            }
         }
     }
 

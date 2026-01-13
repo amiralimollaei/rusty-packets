@@ -15,12 +15,18 @@ pub fn read_bytes<const N: usize>(stream: &mut impl std::io::Read) -> [u8; N] {
 
 pub fn read_n_bytes<S: Read, U: Into<usize>>(reader: &mut S, n: U) -> Result<Vec<u8>, io::Error> {
     // Create a buffer to store the data.
-    let mut buffer = vec![0; n.into()];
+    let n = n.into();
+    let mut buffer = Vec::with_capacity(n);
 
     // Attempt to read 'n' bytes into the buffer.
-    match reader.read_exact(&mut buffer) {
-        Ok(..) => {
-            Ok(buffer) // Return the buffer containing 'n' bytes.
+    match reader.take(n as u64).read_to_end(&mut buffer) {
+        Ok(bytes_read) => {
+            // If we read fewer than 'n' bytes, return an error.
+            if bytes_read < n {
+                Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Read fewer bytes than requested"))
+            } else {
+                Ok(buffer)  // Return the buffer containing 'n' bytes.
+            }
         }
         Err(e) => Err(e), // Propagate any IO error.
     }
