@@ -554,10 +554,8 @@ pub enum ClientboundPlayPacket {
         entity_id: types::Int,
     },
     HurtAnimation {
-        entity_id: types::Int,
-        // TODO: verify the following fields
-        yaw: types::Angle,
-        pitch: types::Angle,
+        entity_id: types::VarInt,
+        yaw: types::Float,
     },
     InitializeWorldBorder {
         x: types::Double,
@@ -595,6 +593,12 @@ pub enum ClientboundPlayPacket {
         data: types::Int,
         disable_relative_volume: types::Boolean,
     },
+    // TODO: figure out why this is happening when recieving this packet:
+    // Error `Invalid enum discriminant: 244`
+    // Particle(
+    //        ID=0x29,
+    //        DATA=[00 3f ec 9c eb b6 73 9c e9 40 53 40 00 00 00 00 00 40 17 60 c2 f3 fb df 82 00 00 00 00 00 00 00 00 00 00 00 00 3e 19 99 9a 00 00 00 3c 01 f4 01]
+    // )
     Particle {
         long_distance: types::Boolean, // If true, particle distance increases from 256 to 65536.
         position: types::DoubleVec3,
@@ -615,7 +619,7 @@ pub enum ClientboundPlayPacket {
         block_light_arrays: types::Array<types::ByteArray>,
     },
     Login {
-        /*
+        
         entity_id: types::Int,                                        // The player's Entity ID (EID).
         is_harcore: types::Boolean,
         dimensions: types::Array<types::String>,                      // Identifiers for all dimensions on the server.
@@ -632,13 +636,9 @@ pub enum ClientboundPlayPacket {
         previous_game_mode: types::Byte,                              // -1: Undefined (null), 0: Survival, 1: Creative, 2: Adventure, 3: Spectator. The previous game mode. Vanilla client uses this for the debug (F3 + N & F3 + F4) game mode switch. (More information needed)
         is_debug: types::Boolean,                                     // True if the world is a debug mode world; debug mode worlds cannot be modified and have predefined blocks.
         is_flat: types::NBTValue,                                     // True if the world is a superflat world; flat worlds have different void fog and a horizon at y=0 instead of y=63.
-        death_dimension_name: types::Optional<types::Identifier>,     // Name of the dimension the player died in.
-        death_location: types::Optional<types::Position>,             // The location that the player died at.
+        death_dimension_name_and_location: types::Optional<(types::Identifier, types::Position)>,     // Name and Location of the dimension the player died in.
         portal_cooldown: types::VarInt,                               // The number of ticks until the player can use the portal again.
         enforces_secure_chat: types::Boolean
-        */
-        // TODO: fix login packet structure not matching what the server sends us
-        data: types::UnsizedByteArray,
     },
     MapData {
         map_id: types::VarInt,
@@ -709,7 +709,8 @@ pub enum ClientboundPlayPacket {
         flying_speed: types::Float, // 0.05 by default.
         field_of_view_modifier: types::Float, // Modifies the field of view, like a speed potion. A Notchian server will use the same value as the movement speed sent in the Update Attributes packet, which defaults to 0.1 for players.
     },
-    PlayerChatMessage {
+    // TODO: figure out why this packet is wrong
+    /*PlayerChatMessage {
         sender: types::UUID,
         index: types::VarInt,
         message_signature: types::Optional<types::FixedSizeByteArray<256>>,
@@ -722,7 +723,8 @@ pub enum ClientboundPlayPacket {
         chat_type: types::VarInt,
         sender_name: types::NBTValue,
         target_name: types::Optional<types::NBTValue>,
-    },
+    },*/
+    PlayerChatMessage(PlaceholderPacket),
     EndCombat {
         duration: types::VarInt, // Length of the combat in ticks.
     },

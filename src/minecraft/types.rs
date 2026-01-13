@@ -2627,6 +2627,13 @@ impl<const N: usize> FixedSizeBitSet<N> {
         Self { values }
     }
 
+    pub fn empty() -> Self {
+        let values: [u8; N] = [0; N];
+        Self { 
+            values
+        }
+    }
+
     /// Gets the bit at the given index.
     /// Panics if the index is out of bounds.
     pub fn get_bit(&self, index: usize) -> bool {
@@ -3359,6 +3366,7 @@ pub enum VibrationPositionSourceEnum {
 
 #[derive(PacketSerde, Debug, Clone)]
 #[discriminant_type(VarInt)]
+// TODO: actually get the particles from the registry
 pub enum ParticleEnum {
     AngryVillager,
     Block {
