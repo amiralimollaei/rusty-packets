@@ -1,5 +1,4 @@
 extern crate proc_macro;
-use std::any::Any;
 
 use proc_macro::TokenStream;
 use quote::{ToTokens, quote};
@@ -97,9 +96,7 @@ fn generate_enum_extended_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_
                     .filter_map(|f| f.ident.as_ref())
                     .collect();
                 quote! {
-                    Self::#variant_name { #( #field_names ),* } => {
-                        stringify!(#variant_name).to_string()
-                    }
+                    Self::#variant_name { #( #field_names ),* } => stringify!(#variant_name).to_string(),
                 }
             }
             Fields::Unnamed(fields) => {
@@ -107,16 +104,12 @@ fn generate_enum_extended_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_
                     .map(|i| quote::format_ident!("field{}", i))
                     .collect();
                 quote! {
-                    Self::#variant_name( #( #field_patterns ),* ) => {
-                        stringify!(#variant_name).to_string()
-                    }
+                    Self::#variant_name( #( #field_patterns ),* ) => stringify!(#variant_name).to_string(),
                 }
             }
             Fields::Unit => {
                 quote! {
-                    Self::#variant_name => {
-                        stringify!(#variant_name).to_string()
-                    }
+                    Self::#variant_name => stringify!(#variant_name).to_string(),
                 }
             }
         }
