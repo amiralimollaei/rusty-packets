@@ -1,3 +1,4 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::{
@@ -142,10 +143,8 @@ pub fn deseralize_status_response(json_string: String) -> StatusResponse {
 
 // ###### Generic Clientbound Status Packet ######
 
-#[derive(PacketSerde, Debug, Clone)]
+#[derive(PacketSerde, GenericPacket, Debug, Clone)]
 pub enum ClientboundStatusPacket {
     StatusResponse { field_status: types::String },
     Pong { timestamp: types::Long },
 }
-
-impl GenericPacket for ClientboundStatusPacket {}

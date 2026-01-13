@@ -1,10 +1,10 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
-
 #[derive(PacketSerde, Clone, Debug)]
 pub enum HandshakeRequest {  // by default enums start from zero, so we have to specify values here
     STATUS = 1,
@@ -23,7 +23,7 @@ pub fn new_handshake_start_packet(protocol: i32, hostname: &str, port: u16, next
 
 // ###### Generic Serverbound Handshake Packet ######
 
-#[derive(PacketSerde, Clone, Debug)]
+#[derive(PacketSerde, GenericPacket, Clone, Debug)]
 pub enum ServerboundHandshakePacket {
     HandshakeStart {
         protocol: types::VarInt,
@@ -32,5 +32,3 @@ pub enum ServerboundHandshakePacket {
         next_state: HandshakeRequest,
     },
 }
-
-impl GenericPacket for ServerboundHandshakePacket {}

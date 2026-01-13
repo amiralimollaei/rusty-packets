@@ -1,3 +1,4 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
@@ -7,7 +8,7 @@ use crate::minecraft::{
 
 // ###### Generic Clientbound Login Packet ######
 
-#[derive(PacketSerde, Debug, Clone)]
+#[derive(PacketSerde, GenericPacket, Debug, Clone)]
 pub enum ClientboundLoginPacket {
     Disconnect {
         reason: types::String,
@@ -35,5 +36,3 @@ pub enum ClientboundLoginPacket {
         key: types::Identifier,
     },
 }
-
-impl GenericPacket for ClientboundLoginPacket {}

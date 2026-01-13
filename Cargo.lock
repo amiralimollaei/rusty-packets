@@ -55,6 +55,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "generic_packet_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -138,6 +147,7 @@ dependencies = [
  "base64",
  "cesu8",
  "flate2",
+ "generic_packet_derive",
  "packet_serde_derive",
  "regex",
  "serde",

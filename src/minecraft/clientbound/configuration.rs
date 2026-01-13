@@ -1,3 +1,4 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
@@ -44,7 +45,7 @@ pub struct ServerLink {
 
 // ###### Generic Clientbound Configuration Packet ######
 
-#[derive(PacketSerde, Clone, Debug)]
+#[derive(PacketSerde, GenericPacket, Clone, Debug)]
 pub enum ClientboundConfigurationPacket {
     CookieRequest {
         key: types::String,
@@ -102,5 +103,3 @@ pub enum ClientboundConfigurationPacket {
         links: types::Array<ServerLink>,
     },
 }
-
-impl GenericPacket for ClientboundConfigurationPacket {}

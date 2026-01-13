@@ -1,3 +1,4 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
@@ -286,7 +287,7 @@ pub enum RecipeBookUpdate {
     },
 }
 
-#[derive(PacketSerde, Debug, Clone)]
+#[derive(PacketSerde, GenericPacket, Debug, Clone)]
 pub enum EntityMetadataValue {
     Byte(types::Byte),
     VarInt(types::VarInt),
@@ -385,7 +386,7 @@ pub struct PlaceholderPacket {
     pub data: types::UnsizedByteArray,
 }
 
-#[derive(PacketSerde, Debug, Clone)]
+#[derive(PacketSerde, GenericPacket, Debug, Clone)]
 pub enum ClientboundPlayPacket {
     BundleDelimiter,
     SpawnEntity {
@@ -887,5 +888,3 @@ pub enum ClientboundPlayPacket {
     PlaceholderPacket7B(PlaceholderPacket),
     PlaceholderPacket7C(PlaceholderPacket),
 }
-
-impl GenericPacket for ClientboundPlayPacket {}

@@ -1,3 +1,4 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
@@ -7,10 +8,8 @@ use crate::minecraft::{
 
 // ###### Generic Serverbound Status Packet ######
 
-#[derive(PacketSerde, Clone, Debug)]
+#[derive(PacketSerde, GenericPacket, Clone, Debug)]
 pub enum ServerboundStatusPacket {
     StatusRequest,
     Ping { timestamp: types::Long },
 }
-
-impl GenericPacket for ServerboundStatusPacket {}

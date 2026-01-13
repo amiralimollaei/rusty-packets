@@ -1,3 +1,4 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
@@ -7,7 +8,7 @@ use crate::minecraft::{
 
 // ###### Generic Serverbound Login Packet ######
 
-#[derive(PacketSerde, Clone, Debug)]
+#[derive(PacketSerde, GenericPacket, Clone, Debug)]
 pub enum ServerboundLoginPacket {
     LoginStart {
         username: types::String,
@@ -28,5 +29,3 @@ pub enum ServerboundLoginPacket {
         payload: types::Optional<types::ByteArray>,
     },
 }
-
-impl GenericPacket for ServerboundLoginPacket {}

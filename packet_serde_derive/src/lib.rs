@@ -49,7 +49,7 @@ fn impl_packet_serde(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::Token
             }
         },
         Data::Enum(e) => {
-            let (write_impl, read_impl, get_id_impl) = generate_enum_impl(e, &ast.attrs);
+            let (write_impl, read_impl) = generate_enum_impl(e, &ast.attrs);
             quote! {
                 impl #impl_generics PacketSerde for #name #ty_generics #packet_serde_where_clause {}
                 
@@ -62,12 +62,6 @@ fn impl_packet_serde(ast: &syn::DeriveInput, name: &Ident) -> proc_macro2::Token
                 impl #impl_generics PacketReadable for #name #ty_generics #readable_where_clause {
                     fn read(stream: &mut impl std::io::Read) -> Self {
                         #read_impl
-                    }
-                }
-
-                impl #name {
-                    pub fn get_id(&self) -> i32 {
-                        #get_id_impl
                     }
                 }
             }
@@ -127,7 +121,7 @@ fn get_discriminant_type(attrs: &[Attribute]) -> proc_macro2::TokenStream {
     quote! { types::VarInt }
 }
 
-fn generate_enum_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::TokenStream, proc_macro2::TokenStream, proc_macro2::TokenStream) {
+fn generate_enum_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
     let discriminant_type = get_discriminant_type(attrs);
     
     let write_arms = e.variants.iter().enumerate().map(|(i, variant)| {
@@ -221,48 +215,7 @@ fn generate_enum_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::T
         }
     });
 
-    let get_id_arms = e.variants.iter().enumerate().map(|(i, variant)| {
-        let variant_name = &variant.ident;
-        let discriminant = match &variant.discriminant {
-            Some((_, exp)) => {
-                exp.to_token_stream()
-            },
-            None => {
-                let enumerator = i as i32;
-                quote! { #enumerator }
-            },
-        };
-
-        match &variant.fields {
-            Fields::Named(fields) => {
-                let field_names: Vec<_> = fields.named.iter()
-                    .filter_map(|f| f.ident.as_ref())
-                    .collect();
-                quote! {
-                    Self::#variant_name { #( #field_names ),* } => {
-                        #discriminant
-                    }
-                }
-            }
-            Fields::Unnamed(fields) => {
-                let field_patterns: Vec<_> = (0..fields.unnamed.len())
-                    .map(|i| quote::format_ident!("field{}", i))
-                    .collect();
-                quote! {
-                    Self::#variant_name( #( #field_patterns ),* ) => {
-                        #discriminant
-                    }
-                }
-            }
-            Fields::Unit => {
-                quote! {
-                    Self::#variant_name => {
-                        #discriminant
-                    }
-                }
-            }
-        }
-    });
+    
     
     let write_impl = quote! {
         match self {
@@ -278,11 +231,5 @@ fn generate_enum_impl(e: &syn::DataEnum, attrs: &[Attribute]) -> (proc_macro2::T
         }
     };
 
-    let get_id_impl = quote! {
-        match self {
-            #( #get_id_arms )*
-        }
-    };
-    
-    (write_impl, read_impl, get_id_impl)
+    (write_impl, read_impl)
 }

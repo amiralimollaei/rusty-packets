@@ -1,3 +1,4 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
@@ -91,7 +92,7 @@ pub enum ChatModeEnum {
 
 // ###### Generic Serverbound Play Packet ######
 
-#[derive(PacketSerde, Clone, Debug)]
+#[derive(PacketSerde, GenericPacket, Clone, Debug)]
 pub enum ServerboundPlayPacket {
     ConfirmTeleportation {
         teleport_id: types::VarInt, // The ID given by the Synchronize Player Position packet.
@@ -371,5 +372,3 @@ pub enum ServerboundPlayPacket {
         pitch: types::Float, // Player head rotation along the X-Axis.
     },
 }
-
-impl GenericPacket for ServerboundPlayPacket {}

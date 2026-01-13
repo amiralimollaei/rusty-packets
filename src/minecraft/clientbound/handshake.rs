@@ -1,15 +1,17 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
-use crate::minecraft::packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable};
+use crate::minecraft::{
+    packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
+    types,
+};
 
 // Placeholder for clientbound handshake packets if needed in the future
 // Currently, there are no clientbound packets in the handshake phase
 
 // ###### Generic Clientbound Handshake Packet ######
 
-#[derive(PacketSerde, Debug, Clone)]
-pub struct ClientboundHandshakePacket {
-    // placeholder
+#[derive(PacketSerde, GenericPacket, Debug, Clone)]
+pub enum ClientboundHandshakePacket {
+    Placeholder
 }
-
-impl GenericPacket for ClientboundHandshakePacket {}

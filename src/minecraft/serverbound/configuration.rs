@@ -1,10 +1,10 @@
+use generic_packet_derive::GenericPacket;
 use packet_serde_derive::PacketSerde;
 
 use crate::minecraft::{
     packet::{GenericPacket, PacketReadable, PacketSerde, PacketWritable},
     types,
 };
-
 #[derive(PacketSerde, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ClientChatMode {
     Enabled,
@@ -35,7 +35,7 @@ pub enum ResourcePackResult {
 
 // ###### Generic Serverbound Configuration Packet ######
 
-#[derive(PacketSerde, Clone, Debug)]
+#[derive(PacketSerde, GenericPacket, Clone, Debug)]
 pub enum ServerboundConfigurationPacket {
     ClientInformation {
         locale: types::String,                  // String: max 16 characters
@@ -70,5 +70,3 @@ pub enum ServerboundConfigurationPacket {
         packs: types::Array<ServerboundKnownPack>,
     },
 }
-
-impl GenericPacket for ServerboundConfigurationPacket {}

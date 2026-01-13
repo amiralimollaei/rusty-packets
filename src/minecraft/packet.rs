@@ -145,14 +145,6 @@ impl RawPacket {
     }
 
     pub fn send(mut self, stream: &mut impl Write) {
-        if get_logger().is_debug() {
-            get_logger().debug(
-                AnsiString::new_colorless("[")
-                    + AnsiString::new_fore("🠩", (0, 255, 0))
-                    + AnsiString::new_colorless("] ")
-                    + AnsiString::new_colorless(&self.to_string()),
-            );
-        }
         let compression_enbaled = get_compression_threshold() > 0;
         if compression_enbaled {
             self.write_with_compression(stream)
@@ -208,15 +200,6 @@ impl RawPacket {
             Self::from_stream_without_compression(stream)
         };
 
-        if get_logger().is_debug() {
-            get_logger().debug(
-                AnsiString::new_colorless("[")
-                    + AnsiString::new_fore("🠯", (255, 0, 0))
-                    + AnsiString::new_colorless("] ")
-                    + AnsiString::new_colorless(&packet.to_string()),
-            );
-        }
-
         packet
     }
 }
@@ -246,14 +229,52 @@ where
     Self: Debug,
 {
     fn recv(stream: &mut impl Read) -> Self {
-        Self::from_bytes(RawPacket::recv(stream).raw_data)
+        let raw_packet = RawPacket::recv(stream);
+        let packet;
+        if get_logger().is_debug() {
+            packet = Self::from_bytes(raw_packet.raw_data.clone());
+            get_logger().debug(
+                AnsiString::new_colorless("[")
+                    + AnsiString::new_fore("🠯", (255, 0, 0))
+                    + AnsiString::new_colorless("] ")
+                    + AnsiString::new_colorless(&packet.to_string(&raw_packet)),
+            );
+        } else {
+            packet = Self::from_bytes(raw_packet.raw_data);
+        }
+        packet
     }
 
     fn send(&self, stream: &mut impl Write) {
         // send the packet
-        RawPacket {
+        let raw_packet = RawPacket {
             raw_data: self.to_bytes(),
+        };
+        if get_logger().is_debug() {
+            get_logger().debug(
+                AnsiString::new_colorless("[")
+                    + AnsiString::new_fore("🠩", (0, 255, 0))
+                    + AnsiString::new_colorless("] ")
+                    + AnsiString::new_colorless(&self.to_string(&raw_packet)),
+            );
         }
-        .send(stream);
+        raw_packet.send(stream);
+    }
+
+    fn get_id(&self) -> i32;
+
+    fn get_name(&self) -> std::string::String;
+
+    fn to_string(&self, raw_packet: &RawPacket) -> String {
+        let (id, data) = raw_packet.parse();
+        if data.len() > 100 {
+            let data = &data[0..100];
+            let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
+            format!("{}(ID={:#02x}, DATA=[{} ...])", self.get_name(), id, data.join(" "))
+        } else {
+            let data = &data;
+            let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
+            format!("{}(ID={:#02x}, DATA=[{}])", self.get_name(), id, data.join(" "))
+        }
     }
 }
