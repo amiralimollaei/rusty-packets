@@ -555,7 +555,9 @@ pub enum ClientboundPlayPacket {
     },
     HurtAnimation {
         entity_id: types::Int,
-        yaw: types::Float,
+        // TODO: verify the following fields
+        yaw: types::Angle,
+        pitch: types::Angle,
     },
     InitializeWorldBorder {
         x: types::Double,
