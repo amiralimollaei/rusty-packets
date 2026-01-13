@@ -1,7 +1,7 @@
 // packet implementation based on https://minecraft.wiki/w/Java_Edition_protocol/Packets?oldid=2789623
 use crate::minecraft::types;
 use crate::utils::ansi::string::AnsiString;
-use crate::utils::logging::{get_log_level, get_logger};
+use crate::utils::logging::get_logger;
 
 use flate2::Compression;
 use flate2::bufread::ZlibDecoder;
@@ -9,21 +9,30 @@ use flate2::write::ZlibEncoder;
 use std::fmt::Debug;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-pub trait PacketWritable {
+pub trait PacketWritable
+where
+    Self: Sized,
+{
     fn write(&self, stream: &mut impl Write);
-}
-
-pub trait PacketReadable {
-    fn read(stream: &mut impl Read) -> Self;
-    fn from_bytes(bytes: &mut Vec<u8>) -> Self
-    where
-        Self: Sized,
-    {
+    fn to_bytes(&self) -> Vec<u8> {
         // create a memory stream
         let mut stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        stream.write_all(bytes).unwrap();
+        self.write(&mut stream);
         // go back to the start of the memory stream
         stream.seek(SeekFrom::Start(0)).unwrap();
+        // return the memory
+        stream.into_inner()
+    }
+}
+
+pub trait PacketReadable
+where
+    Self: Sized,
+{
+    fn read(stream: &mut impl Read) -> Self;
+    fn from_bytes(bytes: Vec<u8>) -> Self {
+        // create a memory stream
+        let mut stream: Cursor<Vec<u8>> = Cursor::new(bytes);
         // read the memory stream
         Self::read(&mut stream)
     }
@@ -164,7 +173,7 @@ impl RawPacket {
                 .read_exact(&mut bytes)
                 .expect("Error reading packet data.");
             data.write_all(&mut bytes).unwrap();
-        } 
+        }
         // construct instance
         Self::new(data)
     }
@@ -265,26 +274,13 @@ where
     Self: Debug,
 {
     fn recv(stream: &mut impl Read) -> Self {
-        Self::read(&mut RawPacket::recv(stream).raw_stream())
+        Self::from_bytes(RawPacket::recv(stream).raw_data)
     }
 
     fn send(&self, stream: &mut impl Write) {
-        // create a memory stream
-        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-        // write packet data
-        self.write(&mut packet_stream);
-        // go back to the start of the memory stream
-        packet_stream
-            .seek(SeekFrom::Start(0))
-            .expect("Error seeking packet data.");
-        // read the memory stream
-        let mut packet_data = Vec::new();
-        packet_stream
-            .read_to_end(&mut packet_data)
-            .expect("Error reading packet data.");
         // send the packet
         RawPacket {
-            raw_data: packet_data,
+            raw_data: self.to_bytes(),
         }
         .send(stream);
     }
