@@ -31,22 +31,6 @@ impl Into<AnsiString> for &str {
     }
 }
 
-fn min(a: usize, b: usize) -> usize {
-    if a > b {
-        b
-    } else {
-        a
-    }
-}
-
-fn max(a: usize, b: usize) -> usize {
-    if a > b {
-        a
-    } else {
-        b
-    }
-}
-
 impl AnsiString {
     pub fn len(&self) -> usize {
         self.vec.len()
@@ -173,7 +157,7 @@ impl AnsiString {
         assert!(pos < self.len());
 
         let si = pos;
-        let ei = min(pos + text.len(), self.vec.len());
+        let ei = usize::min(pos + text.len(), self.vec.len());
 
         for i in si..ei {
             let ac = &text.vec[i - si];

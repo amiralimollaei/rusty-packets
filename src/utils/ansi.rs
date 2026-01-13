@@ -90,6 +90,7 @@ pub enum AnsiGraphicMode {
 
 #[derive(Clone)]
 pub struct AnsiGraphics {
+    // TODO: make this a bitflag
     pub modes: Vec<AnsiGraphicMode>,
 }
 
