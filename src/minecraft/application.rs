@@ -382,12 +382,14 @@ impl<'a> Client<'a> {
                 }
                 packet => {
                     let id = packet.get_id();
+                    let name = packet.get_name();
                     // avoid spamming the logger with the same message
                     unsafe {
                         let ids = &raw mut NOT_IMPLEMENTED_PACKET_IDS as *mut Vec<i32>;
                         if !(*ids).contains(&id) {
                             self.logger.warn(format!(
-                                "Clientbound Play packet with ID={:#04x} is not implemented, skipping.",
+                                "Clientbound Play packet \"{}\" with ID={:#04x} is not implemented, skipping.",
+                                name,
                                 id
                             ));
                             (*ids).push(id);
