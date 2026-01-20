@@ -379,6 +379,123 @@ pub enum EntityAnimationEnum {
     MagicCriticalEffect
 }
 
+#[derive(PacketSerde, Debug, Clone)]
+pub enum EquipmentSlotEnum {
+    MainHand,
+    OffHand,
+    Boots,
+    Leggings,
+    Chestplate,
+    Helmet,
+    Body
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum ScoreboardObjectiveType {
+    Integer,
+    Heards
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum ScoreboardNumberFormat {
+    Blank,
+    Styled(types::NBTValue),  // The styling to be used when formatting the score number. Contains only the text component styling fields.
+    Fixed(types::NBTValue),  // The text to be used as placeholder, e.g. a complete text component.
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+pub enum UpdateObjectivesAction {
+    CreateScoreboard {
+        objective_value: types::NBTValue,
+        objective_type: ScoreboardObjectiveType,
+        number_format: types::Optional<ScoreboardNumberFormat>,
+    },
+    RemoveScoreboard,
+    UpdateDisplayText {
+        objective_value: types::NBTValue,
+        objective_type: ScoreboardObjectiveType,
+        number_format: types::Optional<ScoreboardNumberFormat>,
+    }
+}
+#[derive(PacketSerde, Debug, Clone)]
+pub enum Formatting {
+    Black,
+    DarkBlue,
+    DarkGreen,
+    DarkAqua,
+    DarkRed,
+    DarkPurple,
+    Gold,
+    Gray,
+    DarkGray,
+    Blue,
+    Green,
+    Aqua,
+    Red,
+    LightPurple,
+    Yellow,
+    White,
+    Obfuscated,
+    Bold,
+    Strikethrough,
+    Underlined,
+    Italic,
+    Reset,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(types::Byte)]
+pub enum UpdateTeamsAction {
+    CreateTeam {
+        team_display_name: types::NBTValue,
+        friendly_flags: types::Byte, // Bit mask. 0x01: Allow friendly fire, 0x02: can see invisible players on same team.
+        name_tag_visibility: types::String,  // Enum: always, hideForOtherTeams, hideForOwnTeam, never.
+        collision_rule: types::String,  // Enum: always, pushOtherTeams, pushOwnTeam, never.
+        team_color: Formatting,  // Used to color the name of players on the team.
+        team_prefix: types::NBTValue,  // Displayed before the names of players that are part of this team.
+        team_suffix: types::NBTValue,  // Displayed after the names of players that are part of this team.
+        entities: types::Array<types::String>  // Identifiers for the entities in this team. For players, this is their username; for other entities, it is their UUID.
+    },
+    RemoveTeam,
+    UpdateTeamInfo {
+        team_display_name: types::NBTValue,
+        friendly_flags: types::Byte, // Bit mask. 0x01: Allow friendly fire, 0x02: can see invisible players on same team.
+        name_tag_visibility: types::String,  // Enum: always, hideForOtherTeams, hideForOwnTeam, never.
+        collision_rule: types::String,  // Enum: always, pushOtherTeams, pushOwnTeam, never.
+        team_color: Formatting,  // Used to color the name of players on the team.
+        team_prefix: types::NBTValue,  // Displayed before the names of players that are part of this team.
+        team_suffix: types::NBTValue,  // Displayed after the names of players that are part of this team.
+    },
+    AddEntitiesToTeam {
+        entities: types::Array<types::String>  // Identifiers for the entities to be added. For players, this is their username; for other entities, it is their UUID.
+    },
+    RemoveEntitiesFromTeam {
+        entities: types::Array<types::String>  // Identifiers for the entities to be removed. For players, this is their username; for other entities, it is their UUID.
+    },
+}
+
+#[derive(PacketSerde, Debug, Clone)]
+#[discriminant_type(types::Byte)]
+pub enum SoundCategoryAction {
+    Master,
+    Music {
+        source: types::VarInt,  // If not present, then sounds from all sources are cleared.
+    },
+    Record {
+        sound: types::Identifier, // A sound effect name, see Custom Sound Effect. If not present, then all sounds are cleared.
+    },
+    Weather {
+        source: types::VarInt,  // If not present, then sounds from all sources are cleared.
+        sound: types::Identifier, // A sound effect name, see Custom Sound Effect. If not present, then all sounds are cleared.
+    },
+    Block,
+    Hostile,
+    Neutral,
+    Player,
+    Ambient,
+    Voice,
+}
+
 // ###### Generic Clientbound Play Packet ######
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -709,22 +826,25 @@ pub enum ClientboundPlayPacket {
         flying_speed: types::Float, // 0.05 by default.
         field_of_view_modifier: types::Float, // Modifies the field of view, like a speed potion. A Notchian server will use the same value as the movement speed sent in the Update Attributes packet, which defaults to 0.1 for players.
     },
-    // TODO: figure out why this packet is wrong
-    /*PlayerChatMessage {
+    PlayerChatMessage {
+        // header
         sender: types::UUID,
         index: types::VarInt,
         message_signature: types::Optional<types::FixedSizeByteArray<256>>,
+        // body
         message: types::String,
         timestamp: types::Long,
         salt: types::Long,
+        // Previous Messages
         previous_messages: types::Array<types::IdOr<types::FixedSizeByteArray<256>>>,
-        unsigned_content: types::NBTValue,
+        // Other
+        unsigned_content: types::Optional<types::NBTValue>,
         filter_type: FilterType,
+        // Chat Formatting
         chat_type: types::VarInt,
         sender_name: types::NBTValue,
         target_name: types::Optional<types::NBTValue>,
-    },*/
-    PlayerChatMessage(PlaceholderPacket),
+    },
     EndCombat {
         duration: types::VarInt, // Length of the combat in ticks.
     },
@@ -854,35 +974,134 @@ pub enum ClientboundPlayPacket {
         entity_id: types::VarInt,
         metadata: EntityMetadata
     },
+    LinkEntities {
+        attached_entity_id: types::Int,
+        holding_entity_id: types::Int,
+    },
+    SetEntityVelocity {
+        entity_id: types::VarInt,
+        velocity: types::ShortVec3,
+    },
+    SetEquipment {
+        entity_id: types::VarInt,
+        equipment: types::Array<(EquipmentSlotEnum, types::Slot)>,
+    },
+    SetExperience {
+        experience_bar: types::Float, // Value between 0.0 and 1.0 representing the progress to the next level.
+        level: types::VarInt,         // The player's current experience level.
+        total_experience: types::VarInt, // The total amount of experience the player has.
+    },
+    SetHealth {
+        health: types::Float,
+        food: types::VarInt,
+        food_saturation: types::Float,
+    },
+    UpdateObjectives {
+        objective_name: types::String,
+        action: UpdateObjectivesAction, // 0 create the scoreboard. 1 remove the scoreboard. 2 update the display text.
+
+    },
+    SetPassengers {
+        entity_id: types::VarInt, // Vehicle's EID.
+        passengers: types::Array<types::VarInt>, // EIDs of entity's passengers.
+    },
+    UpdateTeams {
+        team_name: types::String,
+        action: UpdateTeamsAction,
+    },
+    UpdateScore {
+        entity_name: types::String,
+        objective_name: types::String,
+        value: types::VarInt,
+        display_name: types::Optional<types::NBTValue>,
+        number_format: ScoreboardNumberFormat,
+    },
+    SetSimulationDistance {
+        simulation_distance: types::VarInt,
+    },
+    SetSubtitleText {
+        subtitle_text: types::NBTValue,
+    },
+    UpdateTime {
+        world_age: types::Long, // The total age of the world in ticks.
+        time_of_day: types::Long, // The current time of day in ticks.
+    },
+    SetTitleText {
+        title_text: types::NBTValue,
+    },
+    SetTitleAnimationTimes {
+        fade_in_time: types::Int, // Ticks to fade in the title.
+        stay_time: types::Int,    // Ticks to stay fully visible.
+        fade_out_time: types::Int, // Ticks to fade out the title.
+    },
+    EntitySoundEffect {
+        sound_event: types::IdOr<types::SoundEvent>,  // ID in the minecraft:sound_event registry, or an inline definition.
+        sound_category: types::VarInt,  // The category that this sound will be played from (current categories).
+        entity_id: types::VarInt,
+        volume: types::Float,  // 1.0 is 100%, capped between 0.0 and 1.0 by Notchian clients.
+        pitch: types::Float,  // Float between 0.5 and 2.0 by Notchian clients.
+        seed: types::Long,  // Seed used to pick sound variant.
+    },
+    SoundEffect {
+        sound_event: types::IdOr<types::SoundEvent>,  // ID in the minecraft:sound_event registry, or an inline definition.
+        sound_category: types::VarInt,  // The category that this sound will be played from (current categories).
+        effect_position_x: types::Int,  // Effect X multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part).
+        effect_position_y: types::Int,  // Effect Y multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part).
+        effect_position_z: types::Int,  // Effect Z multiplied by 8 (fixed-point number with only 3 bits dedicated to the fractional part).
+        volume: types::Float,  // 1.0 is 100%, capped between 0.0 and 1.0 by Notchian clients.
+        pitch: types::Float,  // Float between 0.5 and 2.0 by Notchian clients.
+        seed: types::Long,  // Seed used to pick sound variant.
+    },
+    StartConfiguration,  // The client must respond with Acknowledge Configuration and change phase to configuration phase to start.
+    StopSound {
+        action: SoundCategoryAction
+    },
+    StoreCookie {
+        key: types::Identifier,
+        payload: types::ByteArray
+    },
+    SystemChatMessage {
+        content: types::NBTValue,
+        overlay: types::Boolean
+    },
+    SetTabListHeaderAndFooter {
+        header: types::NBTValue,
+        footer: types::NBTValue,
+    },
+    TagQueryResponse {
+        transaction_id: types::VarInt,
+        nbt: types::NBTValue
+    },
+    PickupItem {
+        collected_entity_id: types::VarInt,  // also can be any entity, but the Notchian server only uses this for items, experience orbs, and the different varieties of arrows.
+        collector_entity_id: types::VarInt,  // can be any entity; it does not have to be a player.
+        pickup_item_count: types::VarInt,  // Seems to be 1 for XP orbs, otherwise the number of items in the stack.
+    },
+    TeleportEntity {
+        entity_id: types::VarInt,
+        location: types::Location,
+        on_ground: types::Boolean,
+    },
+    SetTickingState {
+        tick_rate: types::Float,
+        is_frozen: types::Boolean,
+    },
+    StepTick {
+        tick_steps: types::VarInt,
+    },
+    Transfer {
+        host: types::String,
+        port: types::VarInt
+    },
+    /*UpdateAdvancements {
+        reset: types::Boolean,
+        advancement_mapping: types::Array<(types::Identifier, Advancement)>,
+        progress_mapping: types::Array<(types::Identifier, AdvancementProgress)>,
+    },*/
+    UpdateAdvancements {
+        data: types::UnsizedByteArray
+    },
     // TODO: implement the rest of the packets
-    PlaceholderPacket59(PlaceholderPacket),
-    PlaceholderPacket5A(PlaceholderPacket),
-    PlaceholderPacket5B(PlaceholderPacket),
-    PlaceholderPacket5C(PlaceholderPacket),
-    PlaceholderPacket5D(PlaceholderPacket),
-    PlaceholderPacket5E(PlaceholderPacket),
-    PlaceholderPacket5F(PlaceholderPacket),
-    PlaceholderPacket60(PlaceholderPacket),
-    PlaceholderPacket61(PlaceholderPacket),
-    PlaceholderPacket62(PlaceholderPacket),
-    PlaceholderPacket63(PlaceholderPacket),
-    PlaceholderPacket64(PlaceholderPacket),
-    PlaceholderPacket65(PlaceholderPacket),
-    PlaceholderPacket66(PlaceholderPacket),
-    PlaceholderPacket67(PlaceholderPacket),
-    PlaceholderPacket68(PlaceholderPacket),
-    PlaceholderPacket69(PlaceholderPacket),
-    PlaceholderPacket6A(PlaceholderPacket),
-    PlaceholderPacket6B(PlaceholderPacket),
-    PlaceholderPacket6C(PlaceholderPacket),
-    PlaceholderPacket6D(PlaceholderPacket),
-    PlaceholderPacket6E(PlaceholderPacket),
-    PlaceholderPacket6F(PlaceholderPacket),
-    PlaceholderPacket70(PlaceholderPacket),
-    PlaceholderPacket71(PlaceholderPacket),
-    PlaceholderPacket72(PlaceholderPacket),
-    PlaceholderPacket73(PlaceholderPacket),
-    PlaceholderPacket74(PlaceholderPacket),
     PlaceholderPacket75(PlaceholderPacket),
     PlaceholderPacket76(PlaceholderPacket),
     PlaceholderPacket77(PlaceholderPacket),
