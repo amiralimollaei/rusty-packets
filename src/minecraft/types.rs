@@ -2207,7 +2207,7 @@ impl NBTValue {
 
     // recursive value read
     fn read_value(type_id: u8, stream: &mut impl Read, root_compound_has_name: bool) -> NBTValue {
-        //println!("{} {}", type_id, root_compound_has_name);
+        get_logger().debug(format!("reading NBT: type_id={}, root_compound_has_name={}", type_id, root_compound_has_name));
         match type_id {
             1 => Self::Byte(i8::from_be_bytes(read_bytes(stream))),
             2 => Self::Short(i16::from_be_bytes(read_bytes(stream))),
@@ -2217,7 +2217,7 @@ impl NBTValue {
             6 => Self::Double(f64::from_be_bytes(read_bytes(stream))),
             7 => {
                 let length = i32::from_be_bytes(read_bytes(stream));
-                let mut values: Vec<i8> = Vec::with_capacity(length as usize);
+                let mut values = Vec::with_capacity(length as usize);
                 for _ in 0..length {
                     values.push(i8::from_be_bytes(read_bytes(stream)))
                 }
@@ -2225,11 +2225,11 @@ impl NBTValue {
             }
             8 => Self::String(Self::read_string(stream)),
             9 => {
-                let type_id = u8::from_be_bytes(read_bytes(stream));
+                let inner_type_id = u8::from_be_bytes(read_bytes(stream));
                 let length = i32::from_be_bytes(read_bytes(stream));
-                let mut values: Vec<NBTValue> = Vec::with_capacity(length as usize);
+                let mut values = Vec::with_capacity(length as usize);
                 for _ in 0..length {
-                    values.push(Self::read_value(type_id, stream, false));
+                    values.push(Self::read_value(inner_type_id, stream, false));
                 }
                 Self::List(values)
             }
@@ -2256,7 +2256,7 @@ impl NBTValue {
             }
             11 => {
                 let length = i32::from_be_bytes(read_bytes(stream));
-                let mut values: Vec<i32> = Vec::with_capacity(length as usize);
+                let mut values= Vec::with_capacity(length as usize);
                 for _ in 0..length {
                     values.push(i32::from_be_bytes(read_bytes(stream)));
                 }
@@ -2264,7 +2264,7 @@ impl NBTValue {
             }
             12 => {
                 let length = i32::from_be_bytes(read_bytes(stream));
-                let mut values: Vec<i64> = Vec::with_capacity(length as usize);
+                let mut values = Vec::with_capacity(length as usize);
                 for _ in 0..length {
                     values.push(i64::from_be_bytes(read_bytes(stream)));
                 }
