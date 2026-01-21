@@ -2026,7 +2026,6 @@ impl_from_tuple!(D0, D1, D2, D3; S0, S1, S2, S3; 0, 1, 2, 3);
 impl_from_tuple!(D0, D1, D2, D3, D4; S0, S1, S2, S3, S4; 0, 1, 2, 3, 4);
 impl_from_tuple!(D0, D1, D2, D3, D4, D5; S0, S1, S2, S3, S4, S5; 0, 1, 2, 3, 4, 5);
 
-
 // ------------ NBT Implentation Start ------------
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -2045,29 +2044,9 @@ pub enum NBTType {
     Compound,           // A list of named tags with variable types, Order is not guaranteed.
     IntArray,           // A length-prefixed array of signed integers. The prefix is a signed integer (thus 4 bytes) and indicates the number of 4 byte integers.
     LongArray,          // A length-prefixed array of signed longs. The prefix is a signed integer (thus 4 bytes) and indicates the number of 8 byte longs.
-    Null,               // used as a placeholder for values we cannot read
 }
 
 impl NBTType {
-    pub fn is_simple(&self) -> bool {
-        match self {
-            Self::End => true,
-            Self::Byte => true,
-            Self::Short => true,
-            Self::Int => true,
-            Self::Long => true,
-            Self::Float => true,
-            Self::Double => true,
-            Self::ByteArray => true,
-            Self::String => true,
-            Self::List(_) => false,
-            Self::Compound => false,
-            Self::IntArray => true,
-            Self::LongArray => true,
-            Self::Null => true,
-        }
-    }
-
     pub fn get_id(&self) -> u8 {
         match self {
             Self::End => 0,
@@ -2083,7 +2062,6 @@ impl NBTType {
             Self::Compound => 10,
             Self::IntArray => 11,
             Self::LongArray => 12,
-            Self::Null => 255,
         }
     }
 
@@ -2117,7 +2095,6 @@ impl NBTType {
                 }
                 Self::List(Box::new(inner_types.last().unwrap().clone()))
             }
-            NBTValue::Null => Self::Null,
         }
     }
 
@@ -2144,98 +2121,63 @@ pub enum NBTValue {
     Compound(std::string::String, HashMap<std::string::String, NBTValue>),
     IntArray(Vec<i32>),
     LongArray(Vec<i64>),
-    Null,
 }
 
 impl NBTValue {
-    fn is_simple(&self) -> bool {
-        match self {
-            NBTValue::End => true,
-            NBTValue::Byte(_) => true,
-            NBTValue::Short(_) => true,
-            NBTValue::Int(_) => true,
-            NBTValue::Long(_) => true,
-            NBTValue::Float(_) => true,
-            NBTValue::Double(_) => true,
-            NBTValue::ByteArray(_) => true,
-            NBTValue::String(_) => true,
-            NBTValue::List(_) => false,
-            NBTValue::Compound(_, _) => false,
-            NBTValue::IntArray(_) => true,
-            NBTValue::LongArray(_) => true,
-            NBTValue::Null => true,
-        }
+    fn get_type(&self) -> NBTType {
+        NBTType::from_value(self)
     }
 
-    fn to_simple_bytes(&self) -> Vec<u8> {
-        assert!(self.is_simple());
+    fn write_value(&self, stream: &mut impl std::io::Write, root_compound_has_name: bool) {
         match self {
-            NBTValue::End => Vec::new(),
-            NBTValue::Byte(v) => v.to_be_bytes().to_vec(),
-            NBTValue::Short(v) => v.to_be_bytes().to_vec(),
-            NBTValue::Int(v) => v.to_be_bytes().to_vec(),
-            NBTValue::Long(v) => v.to_be_bytes().to_vec(),
-            NBTValue::Float(v) => v.to_be_bytes().to_vec(),
-            NBTValue::Double(v) => v.to_be_bytes().to_vec(),
+            NBTValue::End => {},
+            NBTValue::Byte(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
+            NBTValue::Short(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
+            NBTValue::Int(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
+            NBTValue::Long(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
+            NBTValue::Float(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
+            NBTValue::Double(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
             NBTValue::ByteArray(vs) => {
-                let mut bytes: Vec<[u8; 1]> = Vec::with_capacity(vs.len());
+                let mut bytes = Vec::with_capacity(vs.len());
                 for v in vs {
                     bytes.push(v.to_be_bytes());
                 }
                 [&(vs.len() as i32).to_be_bytes(), bytes.concat().as_slice()]
                     .concat()
-                    .to_vec()
+                    .to_vec();
             }
             NBTValue::String(v) => {
                 let bytes = cesu8::to_java_cesu8(v.as_str()).into_owned();
                 [&(v.len() as u16).to_be_bytes(), bytes.as_slice()]
                     .concat()
-                    .to_vec()
+                    .to_vec();
             }
             NBTValue::IntArray(vs) => {
-                let mut bytes: Vec<[u8; 4]> = Vec::with_capacity(vs.len());
+                let mut bytes = Vec::with_capacity(vs.len());
                 for v in vs {
                     bytes.push(v.to_be_bytes());
                 }
                 [&(vs.len() as i32).to_be_bytes(), bytes.concat().as_slice()]
                     .concat()
-                    .to_vec()
+                    .to_vec();
             }
             NBTValue::LongArray(vs) => {
-                let mut bytes: Vec<[u8; 8]> = Vec::with_capacity(vs.len());
+                let mut bytes = Vec::with_capacity(vs.len());
                 for v in vs {
                     bytes.push(v.to_be_bytes());
                 }
                 [&(vs.len() as i32).to_be_bytes(), bytes.concat().as_slice()]
                     .concat()
-                    .to_vec()
+                    .to_vec();
             }
-            _ => {
-                panic!("NotImplemented")
-            }
-        }
-    }
-
-    #[inline]
-    fn write_simple_value(
-        value: &NBTValue,
-        stream: &mut impl std::io::Write,
-    ) -> Result<usize, Error> {
-        assert!(value.is_simple());
-        stream.write(value.to_simple_bytes().as_slice())
-    }
-
-    #[inline]
-    fn write_complex_value(
-        value: &NBTValue,
-        stream: &mut impl std::io::Write,
-        compound_has_name: bool,
-    ) {
-        assert!(!value.is_simple());
-        let ty = NBTType::from_value(value);
-        match value {
             Self::List(vs) => {
-                let ity = ty.get_inner_type().expect("NBT: TypeError");
+                let ity = vs.get(0).expect("list tag cannot be empty").get_type();
+                for v in &vs[1..] {
+                    if v.get_type() != ity {
+                        get_logger().error("list tag must contain values of the same type");
+                        panic!()
+                    }
+                }
                 // write the inner type ID
                 stream
                     .write(&ity.get_id().to_be_bytes())
@@ -2251,7 +2193,7 @@ impl NBTValue {
             }
             Self::Compound(key, vs) => {
                 // only in packets, the root compound tag does not have a name in 1.20.2+
-                if compound_has_name {
+                if root_compound_has_name {
                     NBTValue::String(key.clone()).write_value(stream, true);
                 }
                 for (k, v) in vs {
@@ -2259,26 +2201,13 @@ impl NBTValue {
                     NBTValue::String(k.clone()).write_value(stream, true);
                     v.write_value(stream, true);
                 }
-                NBTValue::End.write_type(stream);
+                NBTValue::End.write_type(stream).expect("NBT: WriteError");
             }
-            _ => {
-                panic!("NotImplemented")
-            }
-        }
+        };
     }
 
     fn write_type(&self, stream: &mut impl std::io::Write) -> Result<usize, Error> {
-        stream.write(&NBTType::from_value(self).get_id().to_be_bytes())
-    }
-
-    fn write_value(&self, stream: &mut impl std::io::Write, root_compound_has_name: bool) {
-        if self.is_simple() {
-            // write the value
-            Self::write_simple_value(self, stream).expect("NBT: WriteError");
-        } else {
-            // write the value
-            Self::write_complex_value(self, stream, root_compound_has_name)
-        }
+        stream.write(&self.get_type().get_id().to_be_bytes())
     }
 
     fn write(&self, stream: &mut impl std::io::Write, root_compound_has_name: bool) {
@@ -2370,22 +2299,22 @@ impl NBTValue {
             type_id => {
                 let mut buf = Vec::new();
                 stream.read_to_end(&mut buf).expect(READ_ERROR);
-                get_logger().error(
-                    format!(
-                        "Unknown type id {} in NBT data, {}",
-                        type_id,
-                        if buf.len() > 100 {
-                            let data = &buf[0..100];
-                            let data: Vec<std::string::String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-                            format!("DATA=[{} ...]", data.join(" "))
-                        } else {
-                            let data = &buf;
-                            let data: Vec<std::string::String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-                            format!("DATA=[{}]", data.join(" "))
-                        }
-                    )
-                );
-                NBTValue::Null
+                get_logger().error(format!(
+                    "Unknown type id {} in NBT data, {}",
+                    type_id,
+                    if buf.len() > 100 {
+                        let data = &buf[0..100];
+                        let data: Vec<std::string::String> =
+                            data.iter().map(|x| format!("{:02x}", x)).collect();
+                        format!("DATA=[{} ...]", data.join(" "))
+                    } else {
+                        let data = &buf;
+                        let data: Vec<std::string::String> =
+                            data.iter().map(|x| format!("{:02x}", x)).collect();
+                        format!("DATA=[{}]", data.join(" "))
+                    }
+                ));
+                panic!()
             }
         }
     }
@@ -2400,7 +2329,7 @@ impl NBTValue {
         self.write_value(stream, write_root_name);
     }
 
-    pub fn from_nbt(filepath: &str) -> Result<Self, Error> {
+    pub fn from_file(filepath: &str) -> Result<Self, Error> {
         let path = Path::new(filepath);
         if !path.exists() {
             return Err(Error::new(
@@ -3093,7 +3022,7 @@ pub struct TrimMaterial {
     pub ingredient: VarInt,
     pub item_model_index: Float, // should be Int, but MC uses Float??
     pub overrides: Array<(VarInt, String)>, // (Armor Material Type, Overriden Asset Name)
-    pub description: NetworkNBT,   // Text component NBT
+    pub description: NetworkNBT, // Text component NBT
 }
 
 #[derive(PacketSerde, Debug, Clone)]

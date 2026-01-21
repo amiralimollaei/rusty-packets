@@ -7,7 +7,6 @@ use crate::utils::read_n_bytes;
 use flate2::Compression;
 use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
