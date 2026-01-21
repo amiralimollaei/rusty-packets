@@ -23,7 +23,7 @@ pub struct ChunkBiomeData {
 #[derive(PacketSerde, Debug, Clone)]
 pub struct CommandSuggestionMatch {
     pub match_: types::String,
-    pub tooltip: types::Optional<types::NBTValue>, // optional text component
+    pub tooltip: types::Optional<types::NetworkNBT>, // optional text component
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -31,9 +31,9 @@ pub struct BlockEntityData {
     // The X and Z coordinates of the block entity, packed into a single byte.
     // The X coordinate is stored in the upper 4 bits, and the Z coordinate is stored in the lower 4 bits.
     pub packed_xz: types::UnsignedByte,
-    pub y: types::UnsignedShort, // The height relative to the world
+    pub y: types::Short, // The height relative to the world
     pub type_: types::VarInt,    // The type of block entity
-    pub data: types::NBTValue,   // The block entity's data, without the X, Y, and Z values
+    pub data: types::NetworkNBT,    // The block entity's data, without the X, Y, and Z values
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -42,7 +42,7 @@ pub struct MapIcon {
     pub x: types::Byte, // Map coordinates: -128 for furthest left, +127 for furthest right
     pub z: types::Byte, // Map coordinates: -128 for highest, +127 for lowest
     pub direction: types::Byte,
-    pub display_name: types::Optional<types::NBTValue>, // Optional Text Component
+    pub display_name: types::Optional<types::NetworkNBT>, // Optional Text Component
 }
 
 #[derive(Debug, Clone)]
@@ -168,7 +168,7 @@ pub enum PlayerInfoUpdateAction {
     GameMode(types::VarInt),
     Listed(types::Boolean),
     Ping(types::VarInt),
-    DisplayName(types::Optional<types::NBTValue>),
+    DisplayName(types::Optional<types::NetworkNBT>),
 }
 
 #[derive(Debug, Clone)]
@@ -203,7 +203,7 @@ impl PacketReadable for PlayerInfoUpdates {
                     3 => PlayerInfoUpdateAction::Listed(types::Boolean::read(stream)),
                     4 => PlayerInfoUpdateAction::Ping(types::VarInt::read(stream)),
                     5 => PlayerInfoUpdateAction::DisplayName(
-                        types::Optional::<types::NBTValue>::read(stream),
+                        types::Optional::<types::NetworkNBT>::read(stream),
                     ),
                     _ => {
                         panic!()
@@ -294,8 +294,8 @@ pub enum EntityMetadataValue {
     VarLong(types::VarLong),
     Float(types::Float),
     String(types::String),
-    TextComponent(types::NBTValue),
-    OptionalTextComponent(types::Optional<types::NBTValue>),
+    TextComponent(types::DataNBT),
+    OptionalTextComponent(types::Optional<types::DataNBT>),
     Slot(types::Slot),
     Boolean(types::Boolean),
     Rotations(types::FloatVec3),
@@ -305,7 +305,7 @@ pub enum EntityMetadataValue {
     OptionalUUID(types::Optional<types::UUID>),
     BlockState(types::VarInt),
     OptionalBlockState(types::VarInt), // 0 for absent (air is unrepresentable)
-    NBT(types::NBTValue),
+    NBT(types::DataNBT),
     Particle(types::ParticleEnum),
     Particles(types::Array<types::ParticleEnum>),
     VillagerData {
@@ -399,20 +399,20 @@ pub enum ScoreboardObjectiveType {
 #[derive(PacketSerde, Debug, Clone)]
 pub enum ScoreboardNumberFormat {
     Blank,
-    Styled(types::NBTValue),  // The styling to be used when formatting the score number. Contains only the text component styling fields.
-    Fixed(types::NBTValue),  // The text to be used as placeholder, e.g. a complete text component.
+    Styled(types::NetworkNBT),  // The styling to be used when formatting the score number. Contains only the text component styling fields.
+    Fixed(types::NetworkNBT),  // The text to be used as placeholder, e.g. a complete text component.
 }
 
 #[derive(PacketSerde, Debug, Clone)]
 pub enum UpdateObjectivesAction {
     CreateScoreboard {
-        objective_value: types::NBTValue,
+        objective_value: types::NetworkNBT,
         objective_type: ScoreboardObjectiveType,
         number_format: types::Optional<ScoreboardNumberFormat>,
     },
     RemoveScoreboard,
     UpdateDisplayText {
-        objective_value: types::NBTValue,
+        objective_value: types::NetworkNBT,
         objective_type: ScoreboardObjectiveType,
         number_format: types::Optional<ScoreboardNumberFormat>,
     }
@@ -447,24 +447,24 @@ pub enum Formatting {
 #[discriminant_type(types::Byte)]
 pub enum UpdateTeamsAction {
     CreateTeam {
-        team_display_name: types::NBTValue,
+        team_display_name: types::NetworkNBT,
         friendly_flags: types::Byte, // Bit mask. 0x01: Allow friendly fire, 0x02: can see invisible players on same team.
         name_tag_visibility: types::String,  // Enum: always, hideForOtherTeams, hideForOwnTeam, never.
         collision_rule: types::String,  // Enum: always, pushOtherTeams, pushOwnTeam, never.
         team_color: Formatting,  // Used to color the name of players on the team.
-        team_prefix: types::NBTValue,  // Displayed before the names of players that are part of this team.
-        team_suffix: types::NBTValue,  // Displayed after the names of players that are part of this team.
+        team_prefix: types::NetworkNBT,  // Displayed before the names of players that are part of this team.
+        team_suffix: types::NetworkNBT,  // Displayed after the names of players that are part of this team.
         entities: types::Array<types::String>  // Identifiers for the entities in this team. For players, this is their username; for other entities, it is their UUID.
     },
     RemoveTeam,
     UpdateTeamInfo {
-        team_display_name: types::NBTValue,
+        team_display_name: types::NetworkNBT,
         friendly_flags: types::Byte, // Bit mask. 0x01: Allow friendly fire, 0x02: can see invisible players on same team.
         name_tag_visibility: types::String,  // Enum: always, hideForOtherTeams, hideForOwnTeam, never.
         collision_rule: types::String,  // Enum: always, pushOtherTeams, pushOwnTeam, never.
         team_color: Formatting,  // Used to color the name of players on the team.
-        team_prefix: types::NBTValue,  // Displayed before the names of players that are part of this team.
-        team_suffix: types::NBTValue,  // Displayed after the names of players that are part of this team.
+        team_prefix: types::NetworkNBT,  // Displayed before the names of players that are part of this team.
+        team_suffix: types::NetworkNBT,  // Displayed after the names of players that are part of this team.
     },
     AddEntitiesToTeam {
         entities: types::Array<types::String>  // Identifiers for the entities to be added. For players, this is their username; for other entities, it is their UUID.
@@ -540,7 +540,7 @@ pub enum ClientboundPlayPacket {
     BlockEntityData {
         location: types::Position,
         type_: types::VarInt,
-        nbt_data: types::NBTValue,
+        nbt_data: types::NetworkNBT,
     },
     BlockAction {
         location: types::Position,
@@ -632,13 +632,13 @@ pub enum ClientboundPlayPacket {
         signature: types::FixedSizeByteArray<256>,
     },
     Disconnect {
-        reason: types::NBTValue, // an NBT Tag containing a single string
+        reason: types::NetworkNBT, // an NBT Tag containing a single string
     },
     DisguisedChatMessage {
-        message: types::NBTValue, // Text Component: This is used as the content parameter when formatting the message on the client.
+        message: types::NetworkNBT, // Text Component: This is used as the content parameter when formatting the message on the client.
         chat_type: types::VarInt, // The type of chat in the minecraft:chat_type registry, defined by the Registry Data packet.
-        sender_name: types::NBTValue, // This is used as the sender parameter when formatting the message on the client.
-        target_name: types::Optional<types::NBTValue>,
+        sender_name: types::NetworkNBT, // This is used as the sender parameter when formatting the message on the client.
+        target_name: types::Optional<types::NetworkNBT>,
     },
     EntityEvent {
         entity_id: types::Int,
@@ -690,10 +690,10 @@ pub enum ClientboundPlayPacket {
     KeepAlive {
         keepalive_id: types::Long,
     },
-    /*ChunkDataAndUpdateLight {
+    ChunkDataAndUpdateLight {
         chunk_x: types::Int, // Block coordinate divided by 16 (rounded down)
         chunk_z: types::Int, // Block coordinate divided by 16 (rounded down)
-        heightmaps: types::NBTValue,
+        heightmaps: types::NetworkNBT,
         data: types::ByteArray,
         block_entities: types::Array<BlockEntityData>,
         sky_light_mask: types::BitSet,
@@ -702,8 +702,7 @@ pub enum ClientboundPlayPacket {
         empty_block_light_mask: types::BitSet,
         sky_light_arrays: types::Array<types::ByteArray>,
         block_light_arrays: types::Array<types::ByteArray>,
-    },*/
-    ChunkDataAndUpdateLight(PlaceholderPacket),
+    },
     WorldEvent {
         event: types::Int,
         position: types::Position,
@@ -736,7 +735,6 @@ pub enum ClientboundPlayPacket {
         block_light_arrays: types::Array<types::ByteArray>,
     },
     Login {
-        
         entity_id: types::Int,                                        // The player's Entity ID (EID).
         is_harcore: types::Boolean,
         dimensions: types::Array<types::String>,                      // Identifiers for all dimensions on the server.
@@ -752,7 +750,7 @@ pub enum ClientboundPlayPacket {
         game_mode: types::UnsignedByte,                               // 0: Survival, 1: Creative, 2: Adventure, 3: Spectator.
         previous_game_mode: types::Byte,                              // -1: Undefined (null), 0: Survival, 1: Creative, 2: Adventure, 3: Spectator. The previous game mode. Vanilla client uses this for the debug (F3 + N & F3 + F4) game mode switch. (More information needed)
         is_debug: types::Boolean,                                     // True if the world is a debug mode world; debug mode worlds cannot be modified and have predefined blocks.
-        is_flat: types::NBTValue,                                     // True if the world is a superflat world; flat worlds have different void fog and a horizon at y=0 instead of y=63.
+        is_flat: types::Boolean,                                     // True if the world is a superflat world; flat worlds have different void fog and a horizon at y=0 instead of y=63.
         death_dimension_name_and_location: types::Optional<(types::Identifier, types::Position)>,     // Name and Location of the dimension the player died in.
         portal_cooldown: types::VarInt,                               // The number of ticks until the player can use the portal again.
         enforces_secure_chat: types::Boolean
@@ -805,7 +803,7 @@ pub enum ClientboundPlayPacket {
     OpenScreen {
         window_id: types::VarInt,
         window_type: types::VarInt,
-        window_title: types::NBTValue, // Text Component
+        window_title: types::NetworkNBT, // Text Component
     },
     OpenSignEditor {
         location: types::Position,
@@ -838,12 +836,12 @@ pub enum ClientboundPlayPacket {
         // Previous Messages
         previous_messages: types::Array<types::IdOr<types::FixedSizeByteArray<256>>>,
         // Other
-        unsigned_content: types::Optional<types::NBTValue>,
+        unsigned_content: types::Optional<types::NetworkNBT>,
         filter_type: FilterType,
         // Chat Formatting
         chat_type: types::VarInt,
-        sender_name: types::NBTValue,
-        target_name: types::Optional<types::NBTValue>,
+        sender_name: types::NetworkNBT,
+        target_name: types::Optional<types::NetworkNBT>,
     },
     EndCombat {
         duration: types::VarInt, // Length of the combat in ticks.
@@ -851,7 +849,7 @@ pub enum ClientboundPlayPacket {
     EnterCombat,
     CombatDeath {
         player_id: types::VarInt, // Entity ID of the player that died (should match the client's entity ID).
-        message: types::NBTValue,
+        message: types::NetworkNBT,
     },
     PlayerInfoRemove {
         players: types::Array<types::UUID>, // UUIDs of players to remove from the player list.
@@ -891,7 +889,7 @@ pub enum ClientboundPlayPacket {
         url: types::String,
         hash: types::String,
         is_forced: types::Boolean,
-        prompt_message: types::Optional<types::NBTValue>,
+        prompt_message: types::Optional<types::NetworkNBT>,
     },
     Respawn {
         dimension_type: types::VarInt,
@@ -919,11 +917,11 @@ pub enum ClientboundPlayPacket {
         id: types::Optional<types::Identifier>,
     },
     ServerData {
-        motd: types::NBTValue,
+        motd: types::DataNBT,
         icon: types::Optional<types::ByteArray>,
     },
     SetActionBarText {
-        text: types::NBTValue,
+        text: types::NetworkNBT,
     },
     SetBorderCenter {
         x: types::Double,
@@ -1013,21 +1011,21 @@ pub enum ClientboundPlayPacket {
         entity_name: types::String,
         objective_name: types::String,
         value: types::VarInt,
-        display_name: types::Optional<types::NBTValue>,
+        display_name: types::Optional<types::NetworkNBT>,
         number_format: ScoreboardNumberFormat,
     },
     SetSimulationDistance {
         simulation_distance: types::VarInt,
     },
     SetSubtitleText {
-        subtitle_text: types::NBTValue,
+        subtitle_text: types::NetworkNBT,
     },
     UpdateTime {
         world_age: types::Long, // The total age of the world in ticks.
         time_of_day: types::Long, // The current time of day in ticks.
     },
     SetTitleText {
-        title_text: types::NBTValue,
+        title_text: types::NetworkNBT,
     },
     SetTitleAnimationTimes {
         fade_in_time: types::Int, // Ticks to fade in the title.
@@ -1061,16 +1059,16 @@ pub enum ClientboundPlayPacket {
         payload: types::ByteArray
     },
     SystemChatMessage {
-        content: types::NBTValue,
+        content: types::NetworkNBT,
         overlay: types::Boolean
     },
     SetTabListHeaderAndFooter {
-        header: types::NBTValue,
-        footer: types::NBTValue,
+        header: types::NetworkNBT,
+        footer: types::NetworkNBT,
     },
     TagQueryResponse {
         transaction_id: types::VarInt,
-        nbt: types::NBTValue
+        nbt: types::NetworkNBT
     },
     PickupItem {
         collected_entity_id: types::VarInt,  // also can be any entity, but the Notchian server only uses this for items, experience orbs, and the different varieties of arrows.

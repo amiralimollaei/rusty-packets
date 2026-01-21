@@ -9,7 +9,7 @@ use crate::minecraft::{
 #[derive(PacketSerde, Debug, Clone)]
 pub struct RegistryEntry {
     pub id: types::Identifier,
-    pub data: types::Optional<types::NBTValue>,
+    pub data: types::Optional<types::NetworkNBT>,
 }
 
 #[derive(PacketSerde, Clone, Debug)]
@@ -39,7 +39,7 @@ pub struct CustomReportDetail {
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct ServerLink {
-    pub label: types::Or<types::VarInt, types::NBTValue>, // VarInt for predefined labels, NBT for custom ones
+    pub label: types::Or<types::VarInt, types::NetworkNBT>, // VarInt for predefined labels, NBT for custom ones
     pub url: types::String,
 }
 
@@ -55,7 +55,7 @@ pub enum ClientboundConfigurationPacket {
         data: types::UnsizedByteArray,
     },
     Disconnect {
-        reason: types::NBTValue,
+        reason: types::NetworkNBT,
     },
     ConfigurationFinish,
     KeepAlive {
@@ -77,7 +77,7 @@ pub enum ClientboundConfigurationPacket {
         url: types::String,
         hash: types::String,
         forced: types::Boolean,
-        prompt_message: types::Optional<types::NBTValue>,
+        prompt_message: types::Optional<types::NetworkNBT>,
     },
     StoreCookie {
         key: types::Identifier,

@@ -8,9 +8,8 @@ use std::ops::Deref;
 
 use packet_serde_derive::PacketSerde;
 
-use super::packet::{PacketReadable, PacketWritable, PacketSerde};
+use super::packet::{PacketReadable, PacketSerde, PacketWritable};
 use crate::utils::{logging::get_logger, read_bytes, read_n_bytes};
-
 
 use std::{
     collections::HashMap,
@@ -695,8 +694,7 @@ impl VarInt {
                 break;
             }
 
-            buf
-                .write_all(&mut [(value & Self::SEGMENT_BITS) as u8 | Self::CONTINUE_BIT])
+            buf.write_all(&mut [(value & Self::SEGMENT_BITS) as u8 | Self::CONTINUE_BIT])
                 .expect(WRITE_ERROR);
 
             // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
@@ -1016,7 +1014,10 @@ pub struct Position {
 
 impl Debug for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("{{ x: {:?}, y: {:?}, z: {:?} }}", &self.x, &self.y, &self.z))
+        f.write_str(&format!(
+            "{{ x: {:?}, y: {:?}, z: {:?} }}",
+            &self.x, &self.y, &self.z
+        ))
     }
 }
 
@@ -1538,12 +1539,8 @@ pub enum Optional<T: PacketSerde> {
 impl<T: Debug + PacketSerde> Debug for Optional<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Some(v) => {
-                f.write_str(&format!("Some({:?})", v))
-            }
-            Self::None => {
-                f.write_str("None")
-            }
+            Self::Some(v) => f.write_str(&format!("Some({:?})", v)),
+            Self::None => f.write_str("None"),
         }
     }
 }
@@ -1678,7 +1675,6 @@ impl<T: PacketSerde, const N: usize> PacketWritable for FixedSizeArray<T, N> {
 }
 
 impl<T: PacketSerde + Debug, const N: usize> PacketSerde for FixedSizeArray<T, N> {}
-
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Array<T: PacketSerde> {
@@ -2263,7 +2259,7 @@ impl NBTValue {
                     NBTValue::String(k.clone()).write_value(stream, true);
                     v.write_value(stream, true);
                 }
-                NBTValue::End.write(stream);
+                NBTValue::End.write_type(stream);
             }
             _ => {
                 panic!("NotImplemented")
@@ -2283,6 +2279,11 @@ impl NBTValue {
             // write the value
             Self::write_complex_value(self, stream, root_compound_has_name)
         }
+    }
+
+    fn write(&self, stream: &mut impl std::io::Write, root_compound_has_name: bool) {
+        self.write_type(stream).expect("NBT: WriteError");
+        self.write_value(stream, root_compound_has_name);
     }
 
     #[inline]
@@ -2429,25 +2430,47 @@ impl NBTValue {
     }
 }
 
-impl PacketWritable for NBTValue {
-    fn write(&self, stream: &mut impl std::io::Write) {
-        // write the type ID
-        self.write_type(stream).expect("NBT: WriteError");
-        // write the value
-        self.write_value(stream, false);
-    }
+#[derive(Clone, Debug, PartialEq)]
+pub struct NetworkNBT {
+    inner: NBTValue,
 }
 
-impl PacketReadable for NBTValue {
+impl PacketReadable for NetworkNBT {
     fn read(stream: &mut impl Read) -> Self {
-        let type_id = Self::read_type_id(stream);
-        Self::read_value(type_id, stream, false)
+        Self {
+            inner: NBTValue::from_stream(stream, false),
+        }
     }
 }
 
-impl PacketSerde for NBTValue {}
+impl PacketWritable for NetworkNBT {
+    fn write(&self, stream: &mut impl Write) {
+        self.inner.write_to_stream(stream, false);
+    }
+}
 
-// ------------- NBT Implentation end -------------
+impl PacketSerde for NetworkNBT {}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DataNBT {
+    inner: NBTValue,
+}
+
+impl PacketReadable for DataNBT {
+    fn read(stream: &mut impl Read) -> Self {
+        Self {
+            inner: NBTValue::from_stream(stream, true),
+        }
+    }
+}
+
+impl PacketWritable for DataNBT {
+    fn write(&self, stream: &mut impl Write) {
+        self.inner.write_to_stream(stream, true);
+    }
+}
+
+impl PacketSerde for DataNBT {}
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Or<A: PacketSerde, B: PacketSerde> {
@@ -2593,7 +2616,6 @@ impl<const N: usize> PacketWritable for FixedSizeByteArray<N> {
 
 impl<const N: usize> PacketSerde for FixedSizeByteArray<N> {}
 
-
 // A fixed-size bit set.
 // The size `N` is the number of bytes.
 // The data is stored as a byte array of that size.
@@ -2629,16 +2651,17 @@ impl<const N: usize> FixedSizeBitSet<N> {
 
     pub fn empty() -> Self {
         let values: [u8; N] = [0; N];
-        Self { 
-            values
-        }
+        Self { values }
     }
 
     /// Gets the bit at the given index.
     /// Panics if the index is out of bounds.
     pub fn get_bit(&self, index: usize) -> bool {
         if index >= N {
-            panic!("Bit index out of bounds: the len is {} but the index is {}", N, index);
+            panic!(
+                "Bit index out of bounds: the len is {} but the index is {}",
+                N, index
+            );
         }
         let byte_index = index / 8;
         let bit_in_byte_index = 7 - (index % 8); // MSB-first
@@ -2649,7 +2672,10 @@ impl<const N: usize> FixedSizeBitSet<N> {
     /// Panics if the index is out of bounds.
     pub fn set_bit(&mut self, index: usize, value: bool) {
         if index >= N {
-            panic!("Bit index out of bounds: the len is {} but the index is {}", N, index);
+            panic!(
+                "Bit index out of bounds: the len is {} but the index is {}",
+                N, index
+            );
         }
         let byte_index = index / 8;
         let bit_in_byte_index = 7 - (index % 8); // MSB-first
@@ -2720,7 +2746,11 @@ impl BitSet {
     /// Panics if the index is out of bounds.
     pub fn get_bit(&self, index: usize) -> bool {
         if index >= self.get_bit_count() {
-            panic!("Bit index out of bounds: the len is {} but the index is {}", self.get_bit_count(), index);
+            panic!(
+                "Bit index out of bounds: the len is {} but the index is {}",
+                self.get_bit_count(),
+                index
+            );
         }
         (self.values[index / 64] & (1 << (index % 64))) != 0
     }
@@ -2729,7 +2759,11 @@ impl BitSet {
     /// Panics if the index is out of bounds.
     pub fn set_bit(&mut self, index: usize, value: bool) {
         if index >= self.get_bit_count() {
-            panic!("Bit index out of bounds: the len is {} but the index is {}", self.get_bit_count(), index);
+            panic!(
+                "Bit index out of bounds: the len is {} but the index is {}",
+                self.get_bit_count(),
+                index
+            );
         }
         let long_index = index / 64;
         let bit_in_long_index = 63 - (index % 64); // MSB-first
@@ -2820,14 +2854,13 @@ impl PacketWritable for BitSet {
 
 impl PacketSerde for BitSet {}
 
-
-impl<T: PacketSerde> PacketWritable for Box<T> {
+impl<T: PacketWritable> PacketWritable for Box<T> {
     fn write(&self, stream: &mut impl Write) {
         self.as_ref().write(stream);
     }
 }
 
-impl<T: PacketSerde> PacketReadable for Box<T> {
+impl<T: PacketReadable> PacketReadable for Box<T> {
     fn read(stream: &mut impl Read) -> Self {
         Box::new(T::read(stream))
     }
@@ -2835,30 +2868,27 @@ impl<T: PacketSerde> PacketReadable for Box<T> {
 
 impl<T: PacketSerde> PacketSerde for Box<T> {}
 
-
 // ####### compound types #######
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct ByteVec3 {
     pub x: Byte,
     pub y: Byte,
-    pub z: Byte
+    pub z: Byte,
 }
-
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct ShortVec3 {
     pub x: Short,
     pub y: Short,
-    pub z: Short
+    pub z: Short,
 }
-
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct FloatVec3 {
     pub x: Float,
     pub y: Float,
-    pub z: Float
+    pub z: Float,
 }
 
 #[derive(PacketSerde, Clone, Debug)]
@@ -2866,14 +2896,14 @@ pub struct FloatVec4 {
     pub x: Float,
     pub y: Float,
     pub z: Float,
-    pub w: Float
+    pub w: Float,
 }
 
 #[derive(PacketSerde, Clone, Debug)]
 pub struct DoubleVec3 {
     pub x: Double,
     pub y: Double,
-    pub z: Double
+    pub z: Double,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -2885,7 +2915,6 @@ pub struct Location {
     pub pitch: Float,
 }
 
-
 #[derive(Debug, Clone)]
 pub enum IdSet {
     Tag(std::string::String),
@@ -2895,10 +2924,8 @@ pub enum IdSet {
 impl PacketReadable for IdSet {
     fn read(stream: &mut impl Read) -> Self {
         let type_ = VarInt::read(stream);
-        match type_.into(){
-            0 => {
-                Self::Tag(String::read(stream).get_value())
-            }
+        match type_.into() {
+            0 => Self::Tag(String::read(stream).get_value()),
             length => {
                 let mut ids = Vec::with_capacity(length as usize);
                 for _ in 0..length {
@@ -2929,7 +2956,6 @@ impl PacketWritable for IdSet {
 
 impl PacketSerde for IdSet {}
 
-
 #[derive(Debug, Clone)]
 pub enum IdOr<T: PacketSerde> {
     Id(i32),
@@ -2939,13 +2965,9 @@ pub enum IdOr<T: PacketSerde> {
 impl<T: PacketSerde> PacketReadable for IdOr<T> {
     fn read(stream: &mut impl Read) -> Self {
         let type_ = VarInt::read(stream);
-        match type_.into(){
-            0 => {
-                Self::Value(T::read(stream))
-            }
-            id_plus_one => {
-                Self::Id(id_plus_one - 1)
-            }
+        match type_.into() {
+            0 => Self::Value(T::read(stream)),
+            id_plus_one => Self::Id(id_plus_one - 1),
         }
     }
 }
@@ -2966,7 +2988,6 @@ impl<T: PacketSerde> PacketWritable for IdOr<T> {
 
 impl<T: PacketSerde> PacketSerde for IdOr<T> {}
 
-
 #[derive(Debug, Clone)]
 pub enum OptionalVarInt {
     None,
@@ -2976,13 +2997,9 @@ pub enum OptionalVarInt {
 impl PacketReadable for OptionalVarInt {
     fn read(stream: &mut impl Read) -> Self {
         let value = VarInt::read(stream);
-        match value.into(){
-            0 => {
-                Self::None
-            }
-            value_plus_one => {
-                Self::Value(value_plus_one - 1)
-            }
+        match value.into() {
+            0 => Self::None,
+            value_plus_one => Self::Value(value_plus_one - 1),
         }
     }
 }
@@ -3013,18 +3030,23 @@ pub enum Rarity {
 }
 
 #[derive(PacketSerde, Debug, Clone)]
+pub struct StringRange {
+    pub min: String,
+    pub max: String,
+}
+
+#[derive(PacketSerde, Debug, Clone)]
 pub struct BlockStateProperty {
     pub name: String,
-    pub value: Or<String, (String, String)>, // exact value or range (min, max)
+    pub value: Or<String, StringRange>, // exact value or range (min, max)
 }
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct BlockPredicate {
     pub blocks: Optional<IdSet>,
     pub properties: Optional<Array<BlockStateProperty>>,
-    pub nbt: Optional<NBTValue>,
+    pub nbt: Optional<NetworkNBT>,
 }
-
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct AttributeModifier {
@@ -3061,23 +3083,23 @@ pub struct ToolRule {
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct BookPageContent {
-    pub raw_content: String,       // The raw text of the page.
-    pub filtered_content: String,  // The content after passing through chat filters. 
+    pub raw_content: String,      // The raw text of the page.
+    pub filtered_content: String, // The content after passing through chat filters.
 }
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct TrimMaterial {
     pub asset_name: String,
     pub ingredient: VarInt,
-    pub item_model_index: Float,  // should be Int, but MC uses Float??
+    pub item_model_index: Float, // should be Int, but MC uses Float??
     pub overrides: Array<(VarInt, String)>, // (Armor Material Type, Overriden Asset Name)
-    pub description: NBTValue,    // Text component NBT
+    pub description: NetworkNBT,   // Text component NBT
 }
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct SoundEvent {
     pub sound_name: Identifier,
-    pub fixed_range: Optional<Float>
+    pub fixed_range: Optional<Float>,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -3090,7 +3112,7 @@ pub struct Instrument {
 #[derive(PacketSerde, Debug, Clone)]
 pub struct JukeboxSong {
     pub sound_event: IdOr<SoundEvent>,
-    pub description: NBTValue,
+    pub description: NetworkNBT,
     pub duration: Float,
     pub output: VarInt,
 }
@@ -3098,7 +3120,7 @@ pub struct JukeboxSong {
 #[derive(PacketSerde, Debug, Clone)]
 pub struct GlobalPosition {
     pub dimension: Identifier,
-    pub position: Position
+    pub position: Position,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -3107,14 +3129,14 @@ pub struct FireworkExplosion {
     pub colors: Array<Int>,
     pub fade_colors: Array<Int>,
     pub has_trail: Boolean,
-    pub has_twinkle: Boolean
+    pub has_twinkle: Boolean,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct Property {
     pub name: String,
     pub value: String,
-    pub signature: Optional<String>
+    pub signature: Optional<String>,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -3135,18 +3157,18 @@ pub enum DyeColor {
     Brown,
     Green,
     Red,
-    Black
+    Black,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct BannerPatternLayer {
-    pub pattern_type: IdOr<(Identifier, String)>,  // (Asset ID, Translation Key)
+    pub pattern_type: IdOr<(Identifier, String)>, // (Asset ID, Translation Key)
     pub color: DyeColor,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
 pub struct HiveResidentBee {
-    pub entity_data: NBTValue,  // always a Compound Tag. Same structure as the minecraft:custom_data component.
+    pub entity_data: NetworkNBT, // always a Compound Tag. Same structure as the minecraft:custom_data component.
     pub ticks_in_hive: VarInt,
     pub min_ticks_in_hive: VarInt,
 }
@@ -3154,14 +3176,14 @@ pub struct HiveResidentBee {
 #[derive(PacketSerde, Debug, Clone)]
 #[discriminant_type(VarInt)]
 pub enum StructuredComponent {
-    CustomData(NBTValue),
+    CustomData(DataNBT),
     MaxStackSize(VarInt),
     MaxDamage(VarInt),
     Damage(VarInt),
     Unbreakable(Boolean),
-    CustomName(NBTValue),
-    ItemName(NBTValue),
-    Lore(Array<NBTValue>),
+    CustomName(DataNBT),
+    ItemName(DataNBT),
+    Lore(Array<DataNBT>),
     Rarity(Rarity),
     Enchantments {
         enchantments: Array<(VarInt, VarInt)>, // (enchantment id, level)
@@ -3210,13 +3232,13 @@ pub enum StructuredComponent {
     },
     MapColor(Int),
     MapId(VarInt),
-    MapDecorations(NBTValue),
+    MapDecorations(DataNBT),
     MapPostProcessing(VarInt),
     ChargedProjectiles {
-        projectiles: Array<Slot>
+        projectiles: Array<Slot>,
     },
     BundleContents {
-        projectiles: Array<Slot>
+        projectiles: Array<Slot>,
     },
     PotionContents {
         potion_id: Optional<VarInt>,
@@ -3228,55 +3250,54 @@ pub enum StructuredComponent {
     },
     WritableBookContent(Array<BookPageContent>),
     WrittenBookContent {
-        raw_title: String,       // The raw title of the book.
-        filtered_title: String,  // The title after going through chat filters
+        raw_title: String,      // The raw title of the book.
+        filtered_title: String, // The title after going through chat filters
         author: String,
         generation: VarInt,
         pages: Array<BookPageContent>,
-        resolved: Boolean,       // Whether entity selectors have already been resolved.
+        resolved: Boolean, // Whether entity selectors have already been resolved.
     },
     Trim {
         trim_material: IdOr<TrimMaterial>,
         show_in_tooltip: Boolean,
     },
-    DebugStickState(NBTValue),    // States of previously interacted blocks. Always a Compound Tag.
-    EntityData(NBTValue),  // Always a Compound Tag.
-    BucketEntityData(NBTValue),  // Always a Compound Tag.
-    BlockEntityData(NBTValue),  // Always a Compound Tag.
+    DebugStickState(DataNBT), // States of previously interacted blocks. Always a Compound Tag.
+    EntityData(DataNBT),      // Always a Compound Tag.
+    BucketEntityData(DataNBT), // Always a Compound Tag.
+    BlockEntityData(DataNBT), // Always a Compound Tag.
     Instrument(IdOr<Instrument>),
     OminousBottleAmplifier(VarInt),
-    JukeboxPlayable{
+    JukeboxPlayable {
         jukebox_song: Or<IdOr<JukeboxSong>, Identifier>,
         show_in_tooltip: Boolean,
     },
-    Recipes(NBTValue),  // Always a Compound Tag.
+    Recipes(DataNBT), // Always a Compound Tag.
     LodestoneTracker {
         global_position: Optional<GlobalPosition>,
-        tracked: Boolean
+        tracked: Boolean,
     },
     FireworkExplosion(FireworkExplosion),
     Fireworks {
         flight_duration: VarInt,
-        explosions: Array<FireworkExplosion>
+        explosions: Array<FireworkExplosion>,
     },
     Profile {
         name: Optional<String>,
         unique_id: Optional<UUID>,
-        properties: Array<Property>
+        properties: Array<Property>,
     },
     NoteBlockSound(Identifier),
     BannerPatterns(Array<BannerPatternLayer>),
     BaseColor(DyeColor),
     PotDecorations(Array<VarInt>),
     Container {
-        items: Array<Slot>
+        items: Array<Slot>,
     },
     BlockState(Array<(String, String)>),
     Bees(Array<HiveResidentBee>),
-    Lock(NBTValue),  // Always a String Tag.
-    ContainerLoot(NBTValue)  // Always a Compound Tag.
+    Lock(DataNBT),          // Always a String Tag.
+    ContainerLoot(DataNBT), // Always a Compound Tag.
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Slot {
@@ -3292,7 +3313,7 @@ impl Slot {
             item_count: 0,
             item_id: 0,
             components_to_add: Vec::new(),
-            components_to_remove: Vec::new()
+            components_to_remove: Vec::new(),
         }
     }
 
@@ -3318,7 +3339,12 @@ impl PacketReadable for Slot {
         for _ in 0..num_components_to_remove {
             components_to_remove.push(StructuredComponent::read(stream));
         }
-        Self { item_count, item_id, components_to_add, components_to_remove }
+        Self {
+            item_count,
+            item_id,
+            components_to_add,
+            components_to_remove,
+        }
     }
 }
 
@@ -3342,7 +3368,6 @@ impl PacketWritable for Slot {
 
 impl PacketSerde for Slot {}
 
-
 #[derive(PacketSerde, Debug, Clone)]
 pub struct SingedProperty {
     pub name: String,
@@ -3350,19 +3375,17 @@ pub struct SingedProperty {
     pub signature: Optional<String>,
 }
 
-
 #[derive(PacketSerde, Debug, Clone)]
 #[discriminant_type(VarInt)]
 pub enum VibrationPositionSourceEnum {
     Block {
-        position: Position  // The position of the block the vibration originated from.
+        position: Position, // The position of the block the vibration originated from.
     },
     Entity {
-        id: VarInt,        // The ID of the entity the vibration originated from. 
-        eye_height: Float  // The height of the entity's eye relative to the entity. 
-    }
+        id: VarInt,        // The ID of the entity the vibration originated from.
+        eye_height: Float, // The height of the entity's eye relative to the entity.
+    },
 }
-
 
 #[derive(PacketSerde, Debug, Clone)]
 #[discriminant_type(VarInt)]
@@ -3370,10 +3393,10 @@ pub enum VibrationPositionSourceEnum {
 pub enum ParticleEnum {
     AngryVillager,
     Block {
-        block_state: VarInt  // The ID of the block state.
+        block_state: VarInt, // The ID of the block state.
     },
     BlockMarker {
-        block_state: VarInt  // The ID of the block state.
+        block_state: VarInt, // The ID of the block state.
     },
     Bubble,
     Cloud,
@@ -3386,19 +3409,19 @@ pub enum ParticleEnum {
     DrippingWater,
     FallingWater,
     Dust {
-        red: Float,    // The red RGB value, between 0 and 1. Divide actual RGB value by 255.
-        green: Float,  // The green RGB value, between 0 and 1. Divide actual RGB value by 255.
-        blue: Float,   // The blue RGB value, between 0 and 1. Divide actual RGB value by 255.
-        scale: Float,  // The scale, will be clamped between 0.01 and 4.
+        red: Float,   // The red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        green: Float, // The green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        blue: Float,  // The blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        scale: Float, // The scale, will be clamped between 0.01 and 4.
     },
     DustColorTransition {
-        from_red: Float,    // The start red RGB value, between 0 and 1. Divide actual RGB value by 255.
-        from_green: Float,  // The start green RGB value, between 0 and 1. Divide actual RGB value by 255.
-        from_blue: Float,   // The start blue RGB value, between 0 and 1. Divide actual RGB value by 255.
-        to_red: Float,      // The end red RGB value, between 0 and 1. Divide actual RGB value by 255.
-        to_green: Float,    // The end green RGB value, between 0 and 1. Divide actual RGB value by 255.
-        to_blue: Float,     // The end blue RGB value, between 0 and 1. Divide actual RGB value by 255.
-        scale: Float,       // The scale, will be clamped between 0.01 and 4.
+        from_red: Float, // The start red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        from_green: Float, // The start green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        from_blue: Float, // The start blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_red: Float,    // The end red RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_green: Float, // The end green RGB value, between 0 and 1. Divide actual RGB value by 255.
+        to_blue: Float,  // The end blue RGB value, between 0 and 1. Divide actual RGB value by 255.
+        scale: Float,    // The scale, will be clamped between 0.01 and 4.
     },
     Effect,
     ElderGuardian,
@@ -3406,7 +3429,7 @@ pub enum ParticleEnum {
     Enchant,
     EndRod,
     EntityEffect {
-        color: Int,  // The ARGB components of the color encoded as an Int
+        color: Int, // The ARGB components of the color encoded as an Int
     },
     ExplotionEmitter,
     Explosion,
@@ -3416,7 +3439,7 @@ pub enum ParticleEnum {
     GustEmitterSmall,
     SonicBoom,
     FallingDust {
-        block_state: VarInt  // The ID of the block state.
+        block_state: VarInt, // The ID of the block state.
     },
     Firework,
     Fishing,
@@ -3425,7 +3448,7 @@ pub enum ParticleEnum {
     CherryLeaves,
     SculkSoul,
     SculkCharge {
-        roll: Float  // How much the particle will be rotated when displayed.
+        roll: Float, // How much the particle will be rotated when displayed.
     },
     SculkChargePop,
     SoulFireFlame,
@@ -3436,11 +3459,11 @@ pub enum ParticleEnum {
     Heart,
     InstantEffect,
     Item {
-        item: Slot  // The item that will be used.
+        item: Slot, // The item that will be used.
     },
     Vibration {
-        position_source: VibrationPositionSourceEnum,  // the vibration source
-        ticks: VarInt  // The amount of ticks it takes for the vibration to travel from its source to its destination.
+        position_source: VibrationPositionSourceEnum, // the vibration source
+        ticks: VarInt, // The amount of ticks it takes for the vibration to travel from its source to its destination.
     },
     ItemSlime,
     ItemCobweb,
@@ -3496,7 +3519,7 @@ pub enum ParticleEnum {
     ElectricSpark,
     Scrape,
     Shriek {
-        delay: VarInt // The time in ticks before the particle is displayed
+        delay: VarInt, // The time in ticks before the particle is displayed
     },
     EggCrack,
     DustPlume,
@@ -3504,13 +3527,12 @@ pub enum ParticleEnum {
     TrialSpawnerDetectionOminous,
     VaultConnection,
     DustPillar {
-        block_state: VarInt  // The ID of the block state.
+        block_state: VarInt, // The ID of the block state.
     },
     OminousSpawning,
     RaidOmen,
     TrialOmen,
 }
-
 
 #[derive(PacketSerde, Debug, Clone)]
 #[discriminant_type(VarInt)]
@@ -3529,7 +3551,7 @@ pub enum EntityPose {
     Roaring,
     Sniffing,
     Emerging,
-    Digging
+    Digging,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -3537,7 +3559,7 @@ pub struct WolfVariant {
     pub wild_texture: Identifier,
     pub tame_texture: Identifier,
     pub angry_texture: Identifier,
-    pub biomes: IdSet
+    pub biomes: IdSet,
 }
 
 #[derive(PacketSerde, Debug, Clone)]
@@ -3545,6 +3567,6 @@ pub struct PaintingVariant {
     pub width: Int,
     pub height: Int,
     pub asset_id: Identifier,
-    pub title: Optional<NBTValue>,
-    pub author: Optional<NBTValue>
+    pub title: Optional<NetworkNBT>,
+    pub author: Optional<NetworkNBT>,
 }

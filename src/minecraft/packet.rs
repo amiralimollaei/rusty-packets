@@ -5,10 +5,11 @@ use crate::utils::logging::get_logger;
 use crate::utils::read_n_bytes;
 
 use flate2::Compression;
-use flate2::bufread::ZlibDecoder;
+use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::io::{BufRead, Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 pub trait PacketWritable
 where
@@ -123,7 +124,8 @@ impl RawPacket {
         } else {
             self.raw_data
         };
-        let mut packet_stream: Cursor<Vec<u8>> = Cursor::new(Vec::with_capacity(packet_cmp.len() + 4));
+        let mut packet_stream: Cursor<Vec<u8>> =
+            Cursor::new(Vec::with_capacity(packet_cmp.len() + 4));
         // write data length as varint
         types::Length::from_i32(if is_compressed {
             packet_cmp.len() as i32
@@ -158,7 +160,8 @@ impl RawPacket {
         // read packet length as varint
         let packet_length = types::Length::read(stream).get_value();
         Self {
-            raw_data: read_n_bytes(stream, packet_length as usize).expect("Error reading packet data.")
+            raw_data: read_n_bytes(stream, packet_length as usize)
+                .expect("Error reading packet data."),
         }
     }
 
@@ -175,11 +178,7 @@ impl RawPacket {
         // store the actual decompressed packet data
         let mut raw_data = Vec::new();
         if is_compressed {
-            let mut raw_data_compressed = Vec::new();
-            raw_packet_stream
-                .read_to_end(&mut raw_data_compressed)
-                .expect("Error reading packet data.");
-            ZlibDecoder::new(Cursor::new(raw_data_compressed))
+            ZlibDecoder::new(raw_packet_stream)
                 .read_to_end(&mut raw_data)
                 .expect("Error decompressing packet data.");
         } else {
@@ -268,11 +267,21 @@ where
         if data.len() > 100 {
             let data = &data[0..100];
             let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-            format!("{}(ID={:#02x}, DATA=[{} ...])", Self::get_name_by_id(id), id, data.join(" "))
+            format!(
+                "{}(ID={:#02x}, DATA=[{} ...])",
+                Self::get_name_by_id(id),
+                id,
+                data.join(" ")
+            )
         } else {
             let data = &data;
             let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
-            format!("{}(ID={:#02x}, DATA=[{}])", Self::get_name_by_id(id), id, data.join(" "))
+            format!(
+                "{}(ID={:#02x}, DATA=[{}])",
+                Self::get_name_by_id(id),
+                id,
+                data.join(" ")
+            )
         }
     }
 }
