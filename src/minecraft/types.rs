@@ -2031,7 +2031,6 @@ impl_from_tuple!(D0, D1, D2, D3, D4, D5; S0, S1, S2, S3, S4, S5; 0, 1, 2, 3, 4, 
 #[derive(Clone, Debug, PartialEq, Eq)]
 // represents all possible NBT types
 pub enum NBTType {
-    End,                // Signifies the end of a Compound.
     Byte,               // A single signed byte
     Short,              // A single signed, big endian 16-bit integer
     Int,                // A single signed, big endian 32-bit integer
@@ -2049,7 +2048,6 @@ pub enum NBTType {
 impl NBTType {
     pub fn get_id(&self) -> u8 {
         match self {
-            Self::End => 0,
             Self::Byte => 1,
             Self::Short => 2,
             Self::Int => 3,
@@ -2067,7 +2065,6 @@ impl NBTType {
 
     pub fn from_value(value: &NBTValue) -> Self {
         match value {
-            NBTValue::End => Self::End,
             NBTValue::Byte(_) => Self::Byte,
             NBTValue::Short(_) => Self::Short,
             NBTValue::Int(_) => Self::Int,
@@ -2108,7 +2105,6 @@ impl NBTType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NBTValue {
-    End,
     Byte(i8),
     Short(i16),
     Int(i32),
@@ -2130,7 +2126,6 @@ impl NBTValue {
 
     fn write_value(&self, stream: &mut impl std::io::Write, root_compound_has_name: bool) {
         match self {
-            NBTValue::End => {},
             NBTValue::Byte(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
             NBTValue::Short(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
             NBTValue::Int(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
@@ -2138,55 +2133,30 @@ impl NBTValue {
             NBTValue::Float(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
             NBTValue::Double(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
             NBTValue::ByteArray(vs) => {
-                let mut bytes = Vec::with_capacity(vs.len());
+                stream.write_all(&(vs.len() as i32).to_be_bytes()).unwrap();
                 for v in vs {
-                    bytes.push(v.to_be_bytes());
+                    stream.write_all(&v.to_be_bytes()).unwrap();
                 }
-                [&(vs.len() as i32).to_be_bytes(), bytes.concat().as_slice()]
-                    .concat()
-                    .to_vec();
             }
             NBTValue::String(v) => {
                 let bytes = cesu8::to_java_cesu8(v.as_str()).into_owned();
-                [&(v.len() as u16).to_be_bytes(), bytes.as_slice()]
-                    .concat()
-                    .to_vec();
+                stream.write_all(&(bytes.len() as i32).to_be_bytes()).unwrap();
+                stream.write_all(&bytes).unwrap();
             }
             NBTValue::IntArray(vs) => {
-                let mut bytes = Vec::with_capacity(vs.len());
+                stream.write_all(&(vs.len() as i32).to_be_bytes()).unwrap();
                 for v in vs {
-                    bytes.push(v.to_be_bytes());
+                    stream.write_all(&v.to_be_bytes()).unwrap();
                 }
-                [&(vs.len() as i32).to_be_bytes(), bytes.concat().as_slice()]
-                    .concat()
-                    .to_vec();
             }
             NBTValue::LongArray(vs) => {
-                let mut bytes = Vec::with_capacity(vs.len());
+                stream.write_all(&(vs.len() as i32).to_be_bytes()).unwrap();
                 for v in vs {
-                    bytes.push(v.to_be_bytes());
+                    stream.write_all(&v.to_be_bytes()).unwrap();
                 }
-                [&(vs.len() as i32).to_be_bytes(), bytes.concat().as_slice()]
-                    .concat()
-                    .to_vec();
             }
             Self::List(vs) => {
-                let ity = vs.get(0).expect("list tag cannot be empty").get_type();
-                for v in &vs[1..] {
-                    if v.get_type() != ity {
-                        get_logger().error("list tag must contain values of the same type");
-                        panic!()
-                    }
-                }
-                // write the inner type ID
-                stream
-                    .write(&ity.get_id().to_be_bytes())
-                    .expect("NBT: WriteError");
-                // write length
-                stream
-                    .write(&(vs.len() as i32).to_be_bytes())
-                    .expect("NBT: WriteError");
-                // write values
+                stream.write_all(&(vs.len() as i32).to_be_bytes()).unwrap();
                 for v in vs {
                     v.write_value(stream, true);
                 }
@@ -2197,21 +2167,26 @@ impl NBTValue {
                     NBTValue::String(key.clone()).write_value(stream, true);
                 }
                 for (k, v) in vs {
-                    v.write_type(stream).expect("NBT: TypeError");
+                    v.write_type(stream);
                     NBTValue::String(k.clone()).write_value(stream, true);
                     v.write_value(stream, true);
                 }
-                NBTValue::End.write_type(stream).expect("NBT: WriteError");
+                // end of compund tag
+                stream.write_all(&[0]).unwrap();
             }
         };
     }
 
-    fn write_type(&self, stream: &mut impl std::io::Write) -> Result<usize, Error> {
-        stream.write(&self.get_type().get_id().to_be_bytes())
+    fn write_type(&self, stream: &mut impl std::io::Write) {
+        let ty = self.get_type();
+        stream.write(&ty.get_id().to_be_bytes()).expect("NBT: WriteError");
+        if let Some(ity) = ty.get_inner_type() {
+            stream.write(&ity.get_id().to_be_bytes()).expect("NBT: WriteError");
+        }
     }
 
     fn write(&self, stream: &mut impl std::io::Write, root_compound_has_name: bool) {
-        self.write_type(stream).expect("NBT: WriteError");
+        self.write_type(stream);
         self.write_value(stream, root_compound_has_name);
     }
 
@@ -2234,7 +2209,6 @@ impl NBTValue {
     fn read_value(type_id: u8, stream: &mut impl Read, root_compound_has_name: bool) -> NBTValue {
         //println!("{} {}", type_id, root_compound_has_name);
         match type_id {
-            0 => Self::End,
             1 => Self::Byte(i8::from_be_bytes(read_bytes(stream))),
             2 => Self::Short(i16::from_be_bytes(read_bytes(stream))),
             3 => Self::Int(i32::from_be_bytes(read_bytes(stream))),
@@ -2270,7 +2244,7 @@ impl NBTValue {
                 let mut values: HashMap<std::string::String, NBTValue> = HashMap::new();
                 loop {
                     let type_id = u8::from_be_bytes(read_bytes(stream));
-                    if type_id == NBTType::End.get_id() {
+                    if type_id == 0 {
                         break;
                     }
                     // read compound name
@@ -2325,7 +2299,7 @@ impl NBTValue {
     }
 
     pub fn write_to_stream(&self, stream: &mut impl std::io::Write, write_root_name: bool) {
-        self.write_type(stream).expect("NBT: WriteError");
+        self.write_type(stream);
         self.write_value(stream, write_root_name);
     }
 
