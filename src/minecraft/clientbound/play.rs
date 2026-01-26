@@ -1077,7 +1077,7 @@ pub enum ClientboundPlayPacket {
     },
     TeleportEntity {
         entity_id: types::VarInt,
-        location: types::Location,
+        location: types::ShortVec3,
         on_ground: types::Boolean,
     },
     SetTickingState {

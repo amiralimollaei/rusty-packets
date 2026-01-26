@@ -1801,9 +1801,7 @@ impl Deref for ByteArray {
 impl PacketReadable for ByteArray {
     fn read(stream: &mut impl Read) -> Self {
         let values_count = VarInt::read(stream).get_value() as usize;
-        let mut values: Vec<u8> = Vec::with_capacity(values_count);
-        stream.read_exact(&mut values).expect(READ_ERROR);
-        Self { values: values }
+        Self { values: read_n_bytes(stream, values_count).expect(READ_ERROR) }
     }
 }
 
@@ -2031,6 +2029,7 @@ impl_from_tuple!(D0, D1, D2, D3, D4, D5; S0, S1, S2, S3, S4, S5; 0, 1, 2, 3, 4, 
 #[derive(Clone, Debug, PartialEq, Eq)]
 // represents all possible NBT types
 pub enum NBTType {
+    Null,
     Byte,               // A single signed byte
     Short,              // A single signed, big endian 16-bit integer
     Int,                // A single signed, big endian 32-bit integer
@@ -2048,6 +2047,7 @@ pub enum NBTType {
 impl NBTType {
     pub fn get_id(&self) -> u8 {
         match self {
+            Self::Null => 0,
             Self::Byte => 1,
             Self::Short => 2,
             Self::Int => 3,
@@ -2065,6 +2065,7 @@ impl NBTType {
 
     pub fn from_value(value: &NBTValue) -> Self {
         match value {
+            NBTValue::Null => Self::Null,
             NBTValue::Byte(_) => Self::Byte,
             NBTValue::Short(_) => Self::Short,
             NBTValue::Int(_) => Self::Int,
@@ -2105,6 +2106,7 @@ impl NBTType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NBTValue {
+    Null,
     Byte(i8),
     Short(i16),
     Int(i32),
@@ -2124,8 +2126,9 @@ impl NBTValue {
         NBTType::from_value(self)
     }
 
-    fn write_value(&self, stream: &mut impl std::io::Write, root_compound_has_name: bool) {
+    fn write_value(&self, stream: &mut impl std::io::Write, compound_has_name: bool) {
         match self {
+            NBTValue::Null => {},
             NBTValue::Byte(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
             NBTValue::Short(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
             NBTValue::Int(v) => stream.write_all(&v.to_be_bytes()).unwrap(),
@@ -2163,7 +2166,7 @@ impl NBTValue {
             }
             Self::Compound(key, vs) => {
                 // only in packets, the root compound tag does not have a name in 1.20.2+
-                if root_compound_has_name {
+                if compound_has_name {
                     NBTValue::String(key.clone()).write_value(stream, true);
                 }
                 for (k, v) in vs {
@@ -2207,8 +2210,8 @@ impl NBTValue {
 
     // recursive value read
     fn read_value(type_id: u8, stream: &mut impl Read, root_compound_has_name: bool) -> NBTValue {
-        get_logger().debug(format!("reading NBT: type_id={}, root_compound_has_name={}", type_id, root_compound_has_name));
         match type_id {
+            0 => Self::Null,
             1 => Self::Byte(i8::from_be_bytes(read_bytes(stream))),
             2 => Self::Short(i16::from_be_bytes(read_bytes(stream))),
             3 => Self::Int(i32::from_be_bytes(read_bytes(stream))),
@@ -2249,7 +2252,6 @@ impl NBTValue {
                     }
                     // read compound name
                     let key = Self::read_string(stream);
-                    //println!("key={}", key);
                     values.insert(key, Self::read_value(type_id, stream, false));
                 }
                 Self::Compound(root_name, values)

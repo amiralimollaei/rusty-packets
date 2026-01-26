@@ -263,12 +263,13 @@ where
 
     fn to_string(raw_packet: &RawPacket) -> std::string::String {
         let (id, data) = raw_packet.parse();
+        let packet_name = Self::get_name_by_id(id);
         if data.len() > 100 {
             let data = &data[0..100];
             let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
             format!(
                 "{}(ID={:#02x}, DATA=[{} ...])",
-                Self::get_name_by_id(id),
+                packet_name,
                 id,
                 data.join(" ")
             )
@@ -277,7 +278,7 @@ where
             let data: Vec<String> = data.iter().map(|x| format!("{:02x}", x)).collect();
             format!(
                 "{}(ID={:#02x}, DATA=[{}])",
-                Self::get_name_by_id(id),
+                packet_name,
                 id,
                 data.join(" ")
             )
